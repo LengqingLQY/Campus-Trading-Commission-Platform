@@ -6,17 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/product.css">
+    <link rel="stylesheet" href="css/profile.css">
     <title>管理员 · 个人空间 · CTCP</title>
 </head>
 <body class="app-page app-page--profile">
 <div class="app-layout">
     <jsp:include page="sidebar.jsp" />
 
-    <main class="workspace">
-        <header class="workspace__topbar">
+    <main class="workspace product-page-workspace profile-page-workspace">
+        <header class="workspace__topbar product-page-topbar profile-topbar">
             <div>
                 <span class="workspace__kicker">PROFILE · ADMIN PANEL</span>
-                <h1>个人空间 <span style="font-size:12px;font-weight:400;padding:2px 12px;border-radius:20px;background:#fff1f0;color:#ff4d4f;margin-left:10px;">管理员</span></h1>
+                <h1>个人空间 <span class="profile-role admin">管理员</span></h1>
             </div>
             <div class="workspace__actions">
                 <button class="profile-chip" type="button">
@@ -28,19 +30,29 @@
 
         <section class="profile-content">
 
-            <!-- ===== 管理员个人信息卡片 ===== -->
-            <div class="profile-info-card">
-                <div class="profile-avatar-row">
-                    <span class="avatar avatar--large" style="background:#ffccc7;color:#ff4d4f;">管</span>
+            <!-- ========================================================= -->
+            <!-- 上半部分：管理员资料                                       -->
+            <!-- ========================================================= -->
+            <div class="profile-card">
+                <div class="section-heading">
+                    <span class="section-heading__number">👤</span>
                     <div>
-                        <strong class="profile-name">系统管理员</strong>
-                        <span class="profile-role" style="background:#fff1f0;color:#ff4d4f;">管理员</span>
+                        <h2>管理员资料</h2>
+                        <p>查看和修改管理员信息</p>
+                    </div>
+                </div>
+
+                <div class="profile-avatar-row">
+                    <span class="profile-avatar-lg admin">管</span>
+                    <div>
+                        <span class="profile-name">系统管理员</span>
+                        <span class="profile-role admin">管理员</span>
                         <p class="profile-contact">QQ：— &nbsp;|&nbsp; 微信：— &nbsp;|&nbsp; 电话：—</p>
                     </div>
                 </div>
 
-                <form class="profile-edit-form">
-                    <div class="form-row">
+                <form class="publish-form">
+                    <div class="publish-form-grid">
                         <div class="form-field">
                             <label for="edit-username">用户名</label>
                             <input type="text" id="edit-username" value="系统管理员">
@@ -62,7 +74,7 @@
                             <input type="password" id="edit-password" placeholder="输入新密码（不填则不修改）">
                         </div>
                     </div>
-                    <div class="form-actions">
+                    <div class="publish-actions">
                         <button class="primary-action" type="button">💾 保存修改</button>
                         <a class="secondary-action" href="#!">取消</a>
                     </div>
@@ -70,76 +82,69 @@
                 </form>
             </div>
 
-            <!-- ===== 管理面板 ===== -->
-            <div class="profile-records-card">
-                <div class="records-header">
-                    <h2>⚙️ 管理面板</h2>
-                    <span>审核 · 删除 · 用户管理</span>
-                </div>
-
-                <!-- ===== 统计卡片 ===== -->
-                <div class="admin-stats">
-                    <div class="stat-item">
-                        <strong>3</strong>
-                        <span>待审核任务</span>
-                    </div>
-                    <div class="stat-item">
-                        <strong>1</strong>
-                        <span>待审核商品</span>
-                    </div>
-                    <div class="stat-item">
-                        <strong>4</strong>
-                        <span>注册用户</span>
-                    </div>
-                    <div class="stat-item">
-                        <strong>0</strong>
-                        <span>举报待处理</span>
+            <!-- ========================================================= -->
+            <!-- 下半部分：管理面板                                         -->
+            <!-- ========================================================= -->
+            <div class="profile-records">
+                <div class="section-heading" style="border-bottom: none; padding-bottom: 0;">
+                    <span class="section-heading__number">⚙️</span>
+                    <div>
+                        <h2>管理面板</h2>
+                        <p>审核 · 删除 · 用户管理</p>
                     </div>
                 </div>
 
-                <!-- ===== Tabs ===== -->
-                <div class="records-tabs">
-                    <a class="tab active" href="#!">📋 待审核任务</a>
-                    <a class="tab" href="#!">🛒 待审核商品</a>
-                    <a class="tab" href="#!">👥 用户管理</a>
+                <!-- 统计卡片 -->
+                <div class="admin-stats" style="margin-top:16px;">
+                    <div class="stat-item"><strong>3</strong><span>待审核任务</span></div>
+                    <div class="stat-item"><strong>1</strong><span>待审核商品</span></div>
+                    <div class="stat-item"><strong>4</strong><span>注册用户</span></div>
+                    <div class="stat-item"><strong>0</strong><span>举报待处理</span></div>
                 </div>
 
-                <!-- ===== Tab 1：待审核任务 ===== -->
-                <div class="records-list">
+                <!-- Tabs -->
+                <div class="market-tools" style="margin-top:0; padding-bottom:16px; border-bottom: 1px solid #eff5f3;">
+                    <a class="sort-pill sort-pill--active" href="#!">📋 待审核任务</a>
+                    <a class="sort-pill" href="#!">🛒 待审核商品</a>
+                    <a class="sort-pill" href="#!">👥 用户管理</a>
+                </div>
+
+                <!-- Tab 1：待审核任务 -->
+                <div>
 
                     <div class="admin-item">
-                        <div>
-                            <span class="record-title">代拿药品（校医院）</span>
-                            <span class="status-tag status-tag--pending">待审核</span>
-                            <p class="record-meta">发布者：爱丽丝 · 金额：6.00 元</p>
+                        <div class="admin-info">
+                            <span class="admin-title">代拿药品（校医院）</span>
+                            <span class="status-tag pending" style="margin-left:6px;">待审核</span>
+                            <p class="admin-meta">发布者：爱丽丝 · 金额：6.00 元</p>
                         </div>
                         <div class="admin-actions">
-                            <button class="btn-approve">✅ 通过</button>
-                            <button class="btn-reject">❌ 驳回</button>
+                            <button class="btn-sm btn-approve">✅ 通过</button>
+                            <button class="btn-sm btn-reject">❌ 驳回</button>
                         </div>
                     </div>
 
                     <div class="admin-item">
-                        <div>
-                            <span class="record-title">帮忙排队买演唱会票</span>
-                            <span class="status-tag status-tag--pending">待审核</span>
-                            <p class="record-meta">发布者：鲍勃 · 金额：50.00 元</p>
+                        <div class="admin-info">
+                            <span class="admin-title">帮忙排队买演唱会票</span>
+                            <span class="status-tag pending" style="margin-left:6px;">待审核</span>
+                            <p class="admin-meta">发布者：鲍勃 · 金额：50.00 元</p>
                         </div>
                         <div class="admin-actions">
-                            <button class="btn-approve">✅ 通过</button>
-                            <button class="btn-reject">❌ 驳回</button>
+                            <button class="btn-sm btn-approve">✅ 通过</button>
+                            <button class="btn-sm btn-reject">❌ 驳回</button>
                         </div>
                     </div>
 
                     <div class="admin-item">
-                        <div>
-                            <span class="record-title">图书馆占座并带份早餐</span>
-                            <span class="status-tag status-tag--pending">待审核</span>
-                            <p class="record-meta">发布者：卡罗尔 · 金额：3.00 元</p>
+                        <div class="admin-info">
+                            <span class="admin-title">图书馆占座并带份早餐</span>
+                            <span class="status-tag pending" style="margin-left:6px;">待审核</span>
+                            <p class="admin-meta">发布者：卡罗尔 · 金额：3.00 元</p>
                         </div>
                         <div class="admin-actions">
-                            <button class="btn-approve">✅ 通过</button>
-                            <button class="btn-reject">❌ 驳回</button>
+                            <button class="btn-sm btn-approve">✅ 通过</button>
+                            <button class="btn-sm btn-reject">❌ 驳回</button>
                         </div>
                     </div>
 
@@ -148,61 +153,61 @@
                     </div>
                 </div>
 
-                <!-- ===== Tab 2：待审核商品（占位，开发时切换显示） ===== -->
-                <div class="records-list" style="display:none;">
+                <!-- Tab 2：待审核商品（占位） -->
+                <div style="display:none;">
                     <div class="admin-item">
-                        <div>
-                            <span class="record-title">宿舍护眼小台灯</span>
-                            <span class="status-tag status-tag--pending">待审核</span>
-                            <p class="record-meta">卖家：卡罗尔 · 价格：15.00 元</p>
+                        <div class="admin-info">
+                            <span class="admin-title">宿舍护眼小台灯</span>
+                            <span class="status-tag pending" style="margin-left:6px;">待审核</span>
+                            <p class="admin-meta">卖家：卡罗尔 · 价格：15.00 元</p>
                         </div>
                         <div class="admin-actions">
-                            <button class="btn-approve">✅ 通过</button>
-                            <button class="btn-reject">❌ 驳回</button>
+                            <button class="btn-sm btn-approve">✅ 通过</button>
+                            <button class="btn-sm btn-reject">❌ 驳回</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- ===== Tab 3：用户管理（占位，开发时切换显示） ===== -->
-                <div class="records-list" style="display:none;">
+                <!-- Tab 3：用户管理（占位） -->
+                <div style="display:none;">
                     <div class="user-search">
                         <input type="text" placeholder="🔍 搜索用户（账号/昵称）">
-                        <button class="search-btn">搜索</button>
+                        <button class="btn-search">搜索</button>
                     </div>
 
                     <div class="admin-item">
-                        <div>
-                            <span class="record-title">爱丽丝</span>
-                            <span class="status-tag">普通用户</span>
-                            <p class="record-meta">QQ:10001 · 微信:wx_alice · 138****0001</p>
+                        <div class="admin-info">
+                            <span class="admin-title">爱丽丝</span>
+                            <span class="status-tag" style="margin-left:6px;">普通用户</span>
+                            <p class="admin-meta">QQ:10001 · 微信:wx_alice · 138****0001</p>
                         </div>
                         <div class="admin-actions">
-                            <button class="btn-edit">✏️ 编辑</button>
-                            <button class="btn-reset">🔒 重置密码</button>
-                        </div>
-                    </div>
-
-                    <div class="admin-item">
-                        <div>
-                            <span class="record-title">鲍勃</span>
-                            <span class="status-tag">普通用户</span>
-                            <p class="record-meta">QQ:10002 · 微信:wx_bob · 138****0002</p>
-                        </div>
-                        <div class="admin-actions">
-                            <button class="btn-edit">✏️ 编辑</button>
-                            <button class="btn-reset">🔒 重置密码</button>
+                            <button class="btn-sm btn-edit">✏️ 编辑</button>
+                            <button class="btn-sm btn-reset">🔒 重置密码</button>
                         </div>
                     </div>
 
                     <div class="admin-item">
-                        <div>
-                            <span class="record-title">卡罗尔</span>
-                            <span class="status-tag">普通用户</span>
-                            <p class="record-meta">QQ:10003 · 微信:wx_carol · 138****0003</p>
+                        <div class="admin-info">
+                            <span class="admin-title">鲍勃</span>
+                            <span class="status-tag" style="margin-left:6px;">普通用户</span>
+                            <p class="admin-meta">QQ:10002 · 微信:wx_bob · 138****0002</p>
                         </div>
                         <div class="admin-actions">
-                            <button class="btn-edit">✏️ 编辑</button>
-                            <button class="btn-reset">🔒 重置密码</button>
+                            <button class="btn-sm btn-edit">✏️ 编辑</button>
+                            <button class="btn-sm btn-reset">🔒 重置密码</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-item">
+                        <div class="admin-info">
+                            <span class="admin-title">卡罗尔</span>
+                            <span class="status-tag" style="margin-left:6px;">普通用户</span>
+                            <p class="admin-meta">QQ:10003 · 微信:wx_carol · 138****0003</p>
+                        </div>
+                        <div class="admin-actions">
+                            <button class="btn-sm btn-edit">✏️ 编辑</button>
+                            <button class="btn-sm btn-reset">🔒 重置密码</button>
                         </div>
                     </div>
 
