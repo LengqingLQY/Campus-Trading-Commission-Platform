@@ -28,3 +28,23 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+### 我们后端的排除规则（草稿仓库里带过来的）###
+# 编译产物 / 打包目录
+target/
+*.class
+
+# 数据库文件由 init_db.py 生成，不入库
+*.db
+*.db-journal
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# 编辑器
+.idea/
+*.swp
