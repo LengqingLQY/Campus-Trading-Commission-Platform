@@ -1,12 +1,13 @@
 -- ============================================================================
 --  校园跑腿交易平台 —— 数据库建表脚本
 --  数据库：SQLite 3
---  版本：v1.0（对应需求分析 v1.1 第一周交付范围）
+--  版本：v1.1（对应需求分析 v1.2 普通用户端第一阶段）
 --
 --  设计要点：
 --   1. audit_status（审核可见性）与 status（业务进度）拆成两个字段，
 --      分别对应需求文档 §4 和 §6 两套状态描述，互不干扰。
---   2. 管理员删除是软删除（is_deleted=1），数据保留，满足 §4.2「数据库保留删除状态」。
+--   2. 管理员审核、删除等能力当前延期；相关字段保留，为后续模块兼容。
+--      当前用户接口创建内容时必须显式写入 audit_status='approved'。
 --   3. 重复接取、自接取、自购买三条业务规则由数据库约束兜底，
 --      后端逻辑写漏也不会产生脏数据。
 --   4. 所有时间统一为 'YYYY-MM-DD HH:MM:SS' 文本，按字典序排即按时间排。
@@ -19,7 +20,7 @@ PRAGMA foreign_keys = ON;
 
 
 -- ============================ 1. 用户表 ============================
--- 普通用户注册产生；管理员账号由 init_db.py 预置，不开放注册（需求 §2）
+-- 普通用户注册产生；admin 账号虽由 init_db.py 兼容预置，但当前管理员功能延期。
 CREATE TABLE IF NOT EXISTS user (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     account       TEXT    NOT NULL UNIQUE,              -- 登录账号，不可重复（P0-01）
@@ -50,7 +51,7 @@ CREATE TABLE IF NOT EXISTS task (
                           CHECK (amount >= 0),
     contact       TEXT    NOT NULL DEFAULT '',          -- 联系方式/备注，纯文本
 
-    -- 审核维度：控制普通用户能否看到（管理员操作）
+    -- 审核维度：控制普通用户能否看到；当前用户接口显式写 approved，后续管理员模块再操作
     audit_status  TEXT    NOT NULL DEFAULT 'pending'
                           CHECK (audit_status IN ('pending', 'approved', 'rejected')),
     audit_remark  TEXT,                                 -- 驳回理由
@@ -60,7 +61,7 @@ CREATE TABLE IF NOT EXISTS task (
     status        TEXT    NOT NULL DEFAULT 'open'
                           CHECK (status IN ('open', 'accepted', 'in_progress', 'delivered', 'completed')),
 
-    -- 软删除：管理员删除违规任务后普通用户列表不再显示，但数据保留
+    -- 软删除：后续管理员删除违规任务时使用；当前接口固定为 0，数据保留
     is_deleted    INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0, 1)),
     deleted_by    INTEGER REFERENCES user(id),
     deleted_at    TEXT,
@@ -85,6 +86,7 @@ CREATE TABLE IF NOT EXISTS product (
     location      TEXT    NOT NULL DEFAULT '',          -- 交易地点
     contact       TEXT    NOT NULL DEFAULT '',
 
+    -- 当前用户接口显式写 approved；pending/rejected 为后续审核模块预留
     audit_status  TEXT    NOT NULL DEFAULT 'pending'
                           CHECK (audit_status IN ('pending', 'approved', 'rejected')),
     audit_remark  TEXT,
@@ -93,6 +95,7 @@ CREATE TABLE IF NOT EXISTS product (
     status        TEXT    NOT NULL DEFAULT 'on_sale'
                           CHECK (status IN ('on_sale', 'sold', 'completed')),
 
+    -- 当前接口固定为 0；后续下架/软删除模块使用
     is_deleted    INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0, 1)),
     deleted_by    INTEGER REFERENCES user(id),
     deleted_at    TEXT,

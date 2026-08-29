@@ -362,6 +362,7 @@
     color: #809496;
     font-size: 11px;
     white-space: nowrap;
+    background: transparent;
     border-radius: 8px;
     transition: color 0.2s ease, background 0.2s ease;
 }

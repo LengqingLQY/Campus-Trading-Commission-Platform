@@ -200,11 +200,11 @@ def test_queries(conn):
     expect_rows("个人空间：alice 我购买的商品", rows,
                 show=lambda r: "#%d %s ¥%.1f" % (r[0], r[1][:8], r[2]))
 
-    # --- 管理员待审核列表 ---
+    # --- 预留审核状态（当前不提供管理员接口） ---
     rows = conn.execute(
         "SELECT id, title FROM task WHERE audit_status = 'pending'"
     ).fetchall()
-    expect_rows("管理员：待审核任务列表", rows, show=lambda r: "#%d %s" % (r[0], r[1]))
+    expect_rows("预留审核状态：待审核任务", rows, show=lambda r: "#%d %s" % (r[0], r[1]))
 
     # --- 双方确认流程：两个待办列表 ---
     rows = conn.execute(
@@ -237,7 +237,7 @@ def test_queries(conn):
                  conn.execute("SELECT id FROM v_public_task WHERE audit_status <> 'approved'").fetchall())
     expect_empty("被驳回商品未出现在前台列表",
                  conn.execute("SELECT id FROM v_public_product WHERE audit_status = 'rejected'").fetchall())
-    expect_empty("管理员已删除任务未出现在前台列表",
+    expect_empty("软删除预留任务未出现在前台列表",
                  conn.execute("SELECT id FROM v_public_task WHERE is_deleted = 1").fetchall())
 
     # 软删除是「藏起来」不是「删掉」，数据必须还在

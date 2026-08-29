@@ -15,9 +15,9 @@
     </div>
 
     <div class="sidebar__profile">
-        <div class="avatar">小</div>
+        <div class="avatar" data-user-avatar>同</div>
         <div class="profile-copy">
-            <strong>同学你好</strong>
+            <strong><span data-user-name>同学</span>，你好</strong>
             <small>今天也要元气满满</small>
         </div>
         <span class="profile-status" aria-label="在线"></span>
@@ -27,7 +27,13 @@
         <p class="nav-caption">功能导航</p>
         <ul>
             <li>
-                <a class="nav-link nav-link--task" href="main.jsp">
+                <a class="nav-link nav-link--home" href="main.jsp">
+                    <span class="nav-icon" aria-hidden="true">⌂</span>
+                    <span>发现首页</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link nav-link--task" href="task-hall.jsp">
                     <span class="nav-icon" aria-hidden="true">↗</span>
                     <span>跑腿任务</span>
                 </a>
@@ -39,10 +45,10 @@
                 </a>
             </li>
             <li>
-                <a class="nav-link nav-link--profile" href="#!">
+                <span class="nav-link nav-link--profile nav-link--disabled" aria-disabled="true" title="个人空间不在本次前端范围">
                     <span class="nav-icon" aria-hidden="true">☻</span>
                     <span>个人空间</span>
-                </a>
+                </span>
             </li>
         </ul>
     </nav>
@@ -52,7 +58,7 @@
             <span class="tip-card__icon" aria-hidden="true">☀</span>
             <p><strong>校园小贴士</strong><br><span>让闲置物品遇见真正需要它的人。</span></p>
         </div>
-        <a class="sidebar-logout" href="index.jsp">
+        <a class="sidebar-logout" href="index.jsp" data-action="logout">
             <span aria-hidden="true">↩</span>
             <span>退出登录</span>
         </a>

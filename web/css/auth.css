@@ -379,8 +379,10 @@
 }
 
 .muted-link {
+    padding: 0;
     color: #91a0aa;
     font-size: 12px;
+    background: transparent;
 }
 
 .muted-link:hover,

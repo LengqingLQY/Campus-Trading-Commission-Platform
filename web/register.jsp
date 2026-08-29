@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/auth.css">
+    <link rel="stylesheet" href="css/functional.css">
     <title>CTCP · 注册</title>
 </head>
 <body class="auth-page auth-page--register">
@@ -39,12 +40,12 @@
         <h2>创建校园账号</h2>
         <p class="auth-card__subtitle">填写信息，开启你的 CTCP 之旅</p>
 
-        <form class="auth-form auth-form--register">
+        <form class="auth-form auth-form--register" data-auth="register" novalidate>
             <div class="form-field">
                 <label for="nickname">昵称</label>
                 <div class="input-wrap">
                     <span class="input-icon" aria-hidden="true">☺</span>
-                    <input type="text" id="nickname" name="nickname" placeholder="给自己取一个昵称" autocomplete="nickname">
+                    <input type="text" id="nickname" name="username" placeholder="给自己取一个昵称" autocomplete="nickname" required>
                 </div>
             </div>
 
@@ -52,7 +53,7 @@
                 <label for="school-account">校园账号</label>
                 <div class="input-wrap">
                     <span class="input-icon" aria-hidden="true">✦</span>
-                    <input type="text" id="school-account" name="school-account" placeholder="请输入校园账号" autocomplete="username">
+                    <input type="text" id="school-account" name="account" placeholder="请输入校园账号" autocomplete="username" required>
                 </div>
             </div>
 
@@ -60,7 +61,7 @@
                 <label for="register-password">设置密码</label>
                 <div class="input-wrap">
                     <span class="input-icon" aria-hidden="true">◒</span>
-                    <input type="password" id="register-password" name="register-password" placeholder="请设置登录密码" autocomplete="new-password">
+                    <input type="password" id="register-password" name="password" placeholder="至少 6 位密码" autocomplete="new-password" required>
                 </div>
             </div>
 
@@ -68,16 +69,33 @@
                 <label for="confirm-password">确认密码</label>
                 <div class="input-wrap">
                     <span class="input-icon" aria-hidden="true">✓</span>
-                    <input type="password" id="confirm-password" name="confirm-password" placeholder="请再次输入登录密码" autocomplete="new-password">
+                    <input type="password" id="confirm-password" name="confirmPassword" placeholder="请再次输入登录密码" autocomplete="new-password" required>
+                </div>
+            </div>
+
+            <div class="auth-contact-grid">
+                <div class="form-field">
+                    <label for="register-qq">QQ <span>选填</span></label>
+                    <input type="text" id="register-qq" name="qq" placeholder="方便交易联系">
+                </div>
+                <div class="form-field">
+                    <label for="register-wechat">微信 <span>选填</span></label>
+                    <input type="text" id="register-wechat" name="wechat" placeholder="微信号">
+                </div>
+                <div class="form-field auth-contact-grid__full">
+                    <label for="register-phone">手机号 <span>选填</span></label>
+                    <input type="tel" id="register-phone" name="phone" placeholder="手机号">
                 </div>
             </div>
 
             <label class="check-label check-label--agreement" for="user-agreement">
-                <input type="checkbox" id="user-agreement" name="user-agreement">
+                <input type="checkbox" id="user-agreement" name="agreement">
                 <span>我已阅读并同意校园平台使用规范</span>
             </label>
 
-            <button class="primary-button" type="button">
+            <p class="form-feedback" data-feedback aria-live="polite"></p>
+
+            <button class="primary-button" type="submit">
                 <span>立即注册</span>
                 <span class="button-arrow" aria-hidden="true">→</span>
             </button>
@@ -91,5 +109,7 @@
     <span>CTCP · Campus Together</span>
     <span>校园协作，从一份好心情开始</span>
 </footer>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
 </body>
 </html>

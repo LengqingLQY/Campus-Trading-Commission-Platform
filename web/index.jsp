@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/auth.css">
+    <link rel="stylesheet" href="css/functional.css">
     <title>CTCP · 登录</title>
 </head>
 <body class="auth-page">
@@ -53,12 +54,12 @@
         <h2>登录 CTCP</h2>
         <p class="auth-card__subtitle">从今天的校园生活开始吧</p>
 
-        <form class="auth-form">
+        <form class="auth-form" data-auth="login" novalidate>
             <div class="form-field">
                 <label for="username">校园账号</label>
                 <div class="input-wrap">
                     <span class="input-icon" aria-hidden="true">✦</span>
-                    <input type="text" id="username" name="username" placeholder="请输入校园账号" autocomplete="username">
+                    <input type="text" id="username" name="username" placeholder="请输入校园账号" autocomplete="username" required>
                 </div>
             </div>
 
@@ -66,7 +67,7 @@
                 <label for="password">登录密码</label>
                 <div class="input-wrap">
                     <span class="input-icon" aria-hidden="true">◒</span>
-                    <input type="password" id="password" name="password" placeholder="请输入登录密码" autocomplete="current-password">
+                    <input type="password" id="password" name="password" placeholder="请输入登录密码" autocomplete="current-password" required>
                 </div>
             </div>
 
@@ -75,10 +76,12 @@
                     <input type="checkbox" id="remember-me" name="remember-me">
                     <span>记住我</span>
                 </label>
-                <a class="muted-link" href="#!">忘记密码？</a>
+                <button class="muted-link" type="button" data-action="forgot-password">忘记密码？</button>
             </div>
 
-            <button class="primary-button" type="button">
+            <p class="form-feedback" data-feedback aria-live="polite"></p>
+
+            <button class="primary-button" type="submit">
                 <span>登录</span>
                 <span class="button-arrow" aria-hidden="true">→</span>
             </button>
@@ -92,5 +95,7 @@
     <span>CTCP · Campus Together</span>
     <span>校园协作，从一份好心情开始</span>
 </footer>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
 </body>
 </html>
