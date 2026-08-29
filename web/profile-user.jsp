@@ -100,9 +100,10 @@
                     </div>
 
                     <div class="market-tools" style="margin-top:16px;padding-bottom:16px;border-bottom:1px solid #eff5f3;">
-                        <button class="sort-pill sort-pill--active" type="button" data-record-tab="published">📦 我发布的</button>
-                        <button class="sort-pill" type="button" data-record-tab="accepted">🏃 我接取的</button>
-                        <button class="sort-pill" type="button" data-record-tab="bought">🛒 我购买的</button>
+                        <button class="sort-pill sort-pill--active" type="button" data-record-tab="published-tasks">📦 我发布的任务</button>
+                        <button class="sort-pill" type="button" data-record-tab="published-products">🛍️ 我上架的商品</button>
+                        <button class="sort-pill" type="button" data-record-tab="accepted">🏃 我接取的任务</button>
+                        <button class="sort-pill" type="button" data-record-tab="bought">🛒 我购买的商品</button>
                     </div>
 
                     <div data-record-list>

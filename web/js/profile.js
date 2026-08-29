@@ -21,7 +21,7 @@
         on_sale: "",
         sold: "done"
     };
-    let currentTab = "published";
+    let currentTab = "published-tasks";
     let userData = null;
 
     // ===== 加载用户资料 =====
@@ -99,47 +99,48 @@
         const items = data.list || [];
 
         if (!items.length) {
-            const labels = { published: "你还没有发布过任何内容", accepted: "你还没有接取任何任务", bought: "你还没有购买任何商品" };
+            const labels = {
+                "published-tasks": "你还没有发布过任何任务",
+                "published-products": "你还没有发布过任何商品",
+                "accepted": "你还没有接取任何任务",
+                "bought": "你还没有购买任何商品"
+            };
             list.innerHTML = `<div class="empty-state"><span>📭</span><h3>${labels[type] || "暂无记录"}</h3></div>`;
             return;
         }
 
         let html = "";
-        if (type === "published") {
-            const tasks = items.filter((item) => item.publisherId !== undefined);
-            const products = items.filter((item) => item.sellerId !== undefined);
-            if (tasks.length) {
-                html += `<div class="record-section-label">📌 跑腿任务</div>`;
-                tasks.forEach((item) => {
-                    const st = statusNames[item.status] || item.status;
-                    const cls = statusClass[item.status] || "";
-                    html += `
-                        <a class="record-item" href="${api.pageUrl(`task-detail.jsp?taskId=${item.id}`)}">
-                            <div class="record-info">
-                                <span class="record-title">${api.escapeHtml(item.title)}</span>
-                                <span class="status-tag ${cls}">${api.escapeHtml(st)}</span>
-                                <p class="record-meta">金额：${api.money(item.amount)} 元</p>
-                            </div>
-                            <span class="record-date">${api.shortTime(item.createdAt)}</span>
-                        </a>`;
-                });
-            }
-            if (products.length) {
-                html += `<div class="record-section-label">📌 二手商品</div>`;
-                products.forEach((item) => {
-                    const st = statusNames[item.status] || item.status;
-                    const cls = statusClass[item.status] || "";
-                    html += `
-                        <a class="record-item" href="${api.pageUrl(`product-detail.jsp?productId=${item.id}`)}">
-                            <div class="record-info">
-                                <span class="record-title">${api.escapeHtml(item.title)}</span>
-                                <span class="status-tag ${cls}">${api.escapeHtml(st)}</span>
-                                <p class="record-meta">价格：${api.money(item.price)} 元</p>
-                            </div>
-                            <span class="record-date">${api.shortTime(item.createdAt)}</span>
-                        </a>`;
-                });
-            }
+
+        if (type === "published-tasks") {
+            html = `<div class="record-section-label">📌 我发布的任务</div>`;
+            items.forEach((item) => {
+                const st = statusNames[item.status] || item.status;
+                const cls = statusClass[item.status] || "";
+                html += `
+                    <a class="record-item" href="${api.pageUrl(`task-detail.jsp?taskId=${item.id}`)}">
+                        <div class="record-info">
+                            <span class="record-title">${api.escapeHtml(item.title)}</span>
+                            <span class="status-tag ${cls}">${api.escapeHtml(st)}</span>
+                            <p class="record-meta">金额：${api.money(item.amount)} 元</p>
+                        </div>
+                        <span class="record-date">${api.shortTime(item.createdAt)}</span>
+                    </a>`;
+            });
+        } else if (type === "published-products") {
+            html = `<div class="record-section-label">📌 我上架的商品</div>`;
+            items.forEach((item) => {
+                const st = statusNames[item.status] || item.status;
+                const cls = statusClass[item.status] || "";
+                html += `
+                    <a class="record-item" href="${api.pageUrl(`product-detail.jsp?productId=${item.id}`)}">
+                        <div class="record-info">
+                            <span class="record-title">${api.escapeHtml(item.title)}</span>
+                            <span class="status-tag ${cls}">${api.escapeHtml(st)}</span>
+                            <p class="record-meta">价格：${api.money(item.price)} 元</p>
+                        </div>
+                        <span class="record-date">${api.shortTime(item.createdAt)}</span>
+                    </a>`;
+            });
         } else if (type === "accepted") {
             html = `<div class="record-section-label">📌 我接取的任务</div>`;
             items.forEach((item) => {
@@ -182,10 +183,12 @@
 
         try {
             let data;
-            if (type === "published" || type === "accepted") {
-                data = await api.request(`/me/tasks${api.query({ type, page: 1, size: 50 })}`);
+            if (type === "published-tasks" || type === "accepted") {
+                const param = type === "published-tasks" ? "published" : "accepted";
+                data = await api.request(`/me/tasks${api.query({ type: param, page: 1, size: 50 })}`);
             } else {
-                data = await api.request(`/me/products${api.query({ type, page: 1, size: 50 })}`);
+                const param = type === "published-products" ? "published" : "bought";
+                data = await api.request(`/me/products${api.query({ type: param, page: 1, size: 50 })}`);
             }
             renderRecords(data, type);
         } catch (error) {
@@ -219,7 +222,6 @@
             loadRecords(currentTab);
         } catch (error) {
             if (error.status === 401) {
-                // 已由 requireUser 处理跳转
                 return;
             }
             document.querySelector("[data-profile-loading]").innerHTML =
