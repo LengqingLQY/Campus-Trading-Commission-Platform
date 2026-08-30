@@ -31,7 +31,7 @@
             document.querySelector("[data-profile-avatar]").textContent = api.initial(userData.username);
             document.querySelector("[data-profile-name]").textContent = userData.username + "的空间";
             document.querySelector("[data-profile-avatar-lg]").textContent = api.initial(userData.username);
-            document.querySelector("[data-profile-username]").textContent = api.escapeHtml(userData.username);
+            document.querySelector("[data-profile-username]").textContent = userData.username;
             document.querySelector("[data-profile-qq]").textContent = userData.qq || "—";
             document.querySelector("[data-profile-wechat]").textContent = userData.wechat || "—";
             document.querySelector("[data-profile-phone]").textContent = userData.phone || "—";

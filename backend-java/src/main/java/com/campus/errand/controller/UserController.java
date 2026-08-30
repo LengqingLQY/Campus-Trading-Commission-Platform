@@ -5,6 +5,7 @@ import com.campus.errand.dto.UserUpdateDTO;
 import com.campus.errand.pojo.Result;
 import com.campus.errand.pojo.User;
 import com.campus.errand.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -39,10 +40,16 @@ public class UserController {
      * POST /api/login —— 登录，写入 session，返回当前用户概要。
      */
     @PostMapping("/login")
-    public Result login(@RequestBody Map<String, String> body, HttpSession session) {
+    public Result login(@RequestBody Map<String, String> body, HttpServletRequest request) {
         User user = userService.checkLogin(body.get("account"), body.get("password"));
 
-        // 登录态存 session，后续接口靠它识别当前用户
+        // 防会话固定：登录成功先作废旧会话，再建立全新会话，
+        // 避免攻击者预先注入的 JSESSIONID 在登录后被复用。
+        HttpSession old = request.getSession(false);
+        if (old != null) {
+            old.invalidate();
+        }
+        HttpSession session = request.getSession(true);
         session.setAttribute("user", user);
 
         Map<String, Object> data = new LinkedHashMap<>();
