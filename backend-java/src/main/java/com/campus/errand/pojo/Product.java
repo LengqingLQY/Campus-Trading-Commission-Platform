@@ -37,6 +37,8 @@ public class Product {
     private String buyerName;
     private Double dealPrice;
     private String buyTime;
+    private String deliveredAt;     // 卖家确认交付时间（product_order）
+    private String finishedAt;      // 买家确认收货时间（product_order）
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
@@ -109,4 +111,10 @@ public class Product {
 
     public String getBuyTime() { return buyTime; }
     public void setBuyTime(String buyTime) { this.buyTime = buyTime; }
+
+    public String getDeliveredAt() { return deliveredAt; }
+    public void setDeliveredAt(String deliveredAt) { this.deliveredAt = deliveredAt; }
+
+    public String getFinishedAt() { return finishedAt; }
+    public void setFinishedAt(String finishedAt) { this.finishedAt = finishedAt; }
 }

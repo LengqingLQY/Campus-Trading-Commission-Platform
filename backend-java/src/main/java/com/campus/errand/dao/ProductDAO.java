@@ -90,10 +90,21 @@ public class ProductDAO {
                 productId);
     }
 
+    /**
+     * 买家确认收货后，商品随订单一起完成（sold -> completed）。
+     */
+    public int markCompleted(int productId) {
+        return jdbc.update(
+                "UPDATE product SET status='completed', updated_at=datetime('now','localtime') "
+              + "WHERE id=? AND status='sold'",
+                productId);
+    }
+
     /** 个人空间：我发布的商品（已售出时附买家与成交信息）。 */
     public List<Product> findPublishedByUser(int sellerId, int offset, int size) {
         String sql = "SELECT p.*, o.id AS orderId, o.buyer_id AS buyerId, "
-                + "u2.username AS buyerName, o.price AS dealPrice, o.status AS orderStatus, o.created_at AS buyTime "
+                + "u2.username AS buyerName, o.price AS dealPrice, o.status AS orderStatus, o.created_at AS buyTime, "
+                + "o.delivered_at AS deliveredAt, o.finished_at AS finishedAt "
                 + "FROM product p "
                 + "LEFT JOIN product_order o ON o.product_id = p.id "
                 + "LEFT JOIN user u2 ON u2.id = o.buyer_id "
@@ -112,7 +123,8 @@ public class ProductDAO {
     /** 个人空间：我购买的商品（附卖家与成交信息）。 */
     public List<Product> findBoughtByUser(int buyerId, int offset, int size) {
         String sql = "SELECT p.*, o.id AS orderId, u2.username AS sellerName, "
-                + "o.price AS dealPrice, o.status AS orderStatus, o.created_at AS buyTime "
+                + "o.price AS dealPrice, o.status AS orderStatus, o.created_at AS buyTime, "
+                + "o.delivered_at AS deliveredAt, o.finished_at AS finishedAt "
                 + "FROM product_order o "
                 + "JOIN product p ON p.id = o.product_id "
                 + "JOIN user u2 ON u2.id = p.seller_id "

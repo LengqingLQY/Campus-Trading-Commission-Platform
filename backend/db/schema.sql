@@ -125,17 +125,18 @@ CREATE TABLE IF NOT EXISTS task_order (
 
 -- ============================ 5. 购买记录表 ============================
 CREATE TABLE IF NOT EXISTS product_order (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    product_id  INTEGER NOT NULL UNIQUE REFERENCES product(id), -- UNIQUE：一件商品只能被买一次
-    seller_id   INTEGER NOT NULL REFERENCES user(id),
-    buyer_id    INTEGER NOT NULL REFERENCES user(id),
-    price       REAL    NOT NULL DEFAULT 0,                     -- 成交价快照，卖家改价不影响历史记录
-    status      TEXT    NOT NULL DEFAULT 'created'
-                        CHECK (status IN ('created', 'completed', 'cancelled')),
-    created_at  TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
-    finished_at TEXT,
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id   INTEGER NOT NULL UNIQUE REFERENCES product(id), -- UNIQUE：一件商品只能被买一次
+    seller_id    INTEGER NOT NULL REFERENCES user(id),
+    buyer_id     INTEGER NOT NULL REFERENCES user(id),
+    price        REAL    NOT NULL DEFAULT 0,                     -- 成交价快照，卖家改价不影响历史记录
+    status       TEXT    NOT NULL DEFAULT 'created'
+                         CHECK (status IN ('created', 'delivered', 'completed', 'cancelled')),
+    created_at   TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+    delivered_at TEXT,                                           -- 卖家点「确认已交付」的时间
+    finished_at  TEXT,                                           -- 买家点「确认收货」的时间
 
-    CHECK (buyer_id <> seller_id)                               -- 不能购买自己的商品（§6 自操作）
+    CHECK (buyer_id <> seller_id)                                -- 不能购买自己的商品（§6 自操作）
 );
 
 

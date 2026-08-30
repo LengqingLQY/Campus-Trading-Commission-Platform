@@ -6,6 +6,8 @@ import com.campus.errand.dto.PageResult;
 import com.campus.errand.dto.ProductCreateDTO;
 import com.campus.errand.exception.BizException;
 import com.campus.errand.pojo.Product;
+import com.campus.errand.pojo.ProductOrder;
+import com.campus.errand.pojo.ProductOrderDetail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -122,6 +124,63 @@ public class ProductService {
             throw new BizException(409, "商品已售出");
         }
         return productOrderDAO.insert(productId, product.getSellerId(), currentUserId, product.getPrice());
+    }
+
+    /**
+     * 查看二手订单：仅订单买家和卖家，viewerRole 由 session 判定（契约 §8.5）。
+     */
+    public ProductOrderDetail getProductOrder(int orderId, int currentUserId) {
+        ProductOrderDetail detail = productOrderDAO.findDetail(orderId);
+        if (detail == null) {
+            throw new BizException(404, "订单不存在");
+        }
+        if (detail.getSellerId() != null && detail.getSellerId() == currentUserId) {
+            detail.setViewerRole("seller");
+        } else if (detail.getBuyerId() != null && detail.getBuyerId() == currentUserId) {
+            detail.setViewerRole("buyer");
+        } else {
+            throw new BizException(403, "无权限查看该订单");
+        }
+        return detail;
+    }
+
+    /**
+     * 卖家确认交付（事务内）：仅卖家、且订单 created -> delivered。
+     * 带状态条件的 UPDATE，行数 0 时返回 409。
+     */
+    @Transactional
+    public void deliverProductOrder(int orderId, int currentUserId) {
+        ProductOrder order = productOrderDAO.findById(orderId);
+        if (order == null) {
+            throw new BizException(404, "订单不存在");
+        }
+        if (order.getSellerId() == null || order.getSellerId() != currentUserId) {
+            throw new BizException(403, "只有卖家可以确认交付");
+        }
+        int rows = productOrderDAO.markDelivered(orderId, currentUserId);
+        if (rows == 0) {
+            throw new BizException(409, "当前状态不允许该操作");
+        }
+    }
+
+    /**
+     * 买家确认收货（事务内）：仅买家、且订单 delivered -> completed，
+     * 同时商品 sold -> completed。订单与商品任一更新失败都整体回滚。
+     */
+    @Transactional
+    public void completeProductOrder(int orderId, int currentUserId) {
+        ProductOrder order = productOrderDAO.findById(orderId);
+        if (order == null) {
+            throw new BizException(404, "订单不存在");
+        }
+        if (order.getBuyerId() == null || order.getBuyerId() != currentUserId) {
+            throw new BizException(403, "只有买家可以确认收货");
+        }
+        int rows = productOrderDAO.markCompleted(orderId, currentUserId);
+        if (rows == 0) {
+            throw new BizException(409, "当前状态不允许该操作");
+        }
+        productDAO.markCompleted(order.getProductId());
     }
 
     /**

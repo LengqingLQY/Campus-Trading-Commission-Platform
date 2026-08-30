@@ -228,12 +228,12 @@ def insert_demo(conn):
         ],
     )
 
-    # 商品2（罗技鼠标）被 alice 买走
+    # 商品2（罗技鼠标）被 alice 买走，状态 created（待卖家交付）
     conn.execute(
         """INSERT INTO product_order
-             (product_id, seller_id, buyer_id, price, status, created_at, finished_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
-        (2, BOB_ID, ALICE_ID, 45.0, "created", _ts(days=3, hours=8), None),
+             (product_id, seller_id, buyer_id, price, status, created_at, delivered_at, finished_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+        (2, BOB_ID, ALICE_ID, 45.0, "created", _ts(days=3, hours=8), None, None),
     )
     conn.commit()
 
