@@ -21,8 +21,14 @@
         on_sale: "",
         sold: "done"
     };
-    let currentTab = "published-tasks";
+    const recordTabs = new Set(["published-tasks", "published-products", "accepted", "bought"]);
+    const requestedTab = new URLSearchParams(location.search).get("recordTab");
+    let currentTab = recordTabs.has(requestedTab) ? requestedTab : "published-tasks";
     let userData = null;
+
+    function profileReturnPath(type) {
+        return `profile-user.jsp?recordTab=${encodeURIComponent(type)}#profile-records`;
+    }
 
     // ===== 加载用户资料 =====
     async function loadProfile() {
@@ -132,7 +138,7 @@
                 const st = statusNames[item.status] || item.status;
                 const cls = statusClass[item.status] || "";
                 html += `
-                    <a class="record-item" href="${api.pageUrl(`product-detail.jsp?productId=${item.id}`)}">
+                    <a class="record-item" href="${api.pageUrlWithReturn(`product-detail.jsp?productId=${item.id}`, profileReturnPath(type))}">
                         <div class="record-info">
                             <span class="record-title">${api.escapeHtml(item.title)}</span>
                             <span class="status-tag ${cls}">${api.escapeHtml(st)}</span>
@@ -162,7 +168,7 @@
                 const st = statusNames[item.status] || item.status;
                 const cls = statusClass[item.status] || "";
                 html += `
-                    <a class="record-item" href="${api.pageUrl(`product-detail.jsp?productId=${item.id}`)}">
+                    <a class="record-item" href="${api.pageUrlWithReturn(`product-detail.jsp?productId=${item.id}`, profileReturnPath(type))}">
                         <div class="record-info">
                             <span class="record-title">${api.escapeHtml(item.title)}</span>
                             <span class="status-tag ${cls}">${api.escapeHtml(st)}</span>
@@ -199,10 +205,14 @@
     // ===== Tab 切换 =====
     function initTabs() {
         document.querySelectorAll("[data-record-tab]").forEach((button) => {
+            button.classList.toggle("sort-pill--active", button.dataset.recordTab === currentTab);
             button.addEventListener("click", function () {
                 document.querySelectorAll("[data-record-tab]").forEach((b) => b.classList.remove("sort-pill--active"));
                 this.classList.add("sort-pill--active");
                 currentTab = this.dataset.recordTab;
+                const nextUrl = new URL(location.href);
+                nextUrl.searchParams.set("recordTab", currentTab);
+                history.replaceState(null, "", nextUrl);
                 loadRecords(currentTab);
             });
         });

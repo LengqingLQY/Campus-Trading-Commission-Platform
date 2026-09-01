@@ -11,8 +11,8 @@
 注意：脚本会删除并重建所有表，已有数据会丢失。可反复执行。
 
 关于密码哈希：
-    优先使用 werkzeug.security.generate_password_hash；若环境还没装 Flask，
-    则用标准库 hashlib 生成 **格式完全一致** 的哈希
+    优先使用 werkzeug.security.generate_password_hash，并显式指定 PBKDF2；
+    若环境还没装 Flask，则用标准库 hashlib 生成 **格式完全一致** 的哈希
     （pbkdf2:sha256:600000$盐$哈希）。装上 Flask 之后，
     werkzeug.security.check_password_hash 可以直接校验本脚本生成的密码。
 """
@@ -60,9 +60,17 @@ def _fallback_generate_password_hash(password, salt_length=16):
 
 
 try:
-    from werkzeug.security import generate_password_hash
+    from werkzeug.security import generate_password_hash as _werkzeug_generate_password_hash
 
-    HASH_SOURCE = "werkzeug"
+    def generate_password_hash(password, salt_length=16):
+        """显式固定 PBKDF2，避免新版 Werkzeug 默认改用 Java 端不支持的 scrypt。"""
+        return _werkzeug_generate_password_hash(
+            password,
+            method="pbkdf2:sha256:%d" % PBKDF2_ITERATIONS,
+            salt_length=salt_length,
+        )
+
+    HASH_SOURCE = "werkzeug(pbkdf2:sha256:%d)" % PBKDF2_ITERATIONS
 except ImportError:
     generate_password_hash = _fallback_generate_password_hash
     HASH_SOURCE = "hashlib(与 werkzeug 格式兼容)"

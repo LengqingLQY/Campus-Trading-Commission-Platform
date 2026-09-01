@@ -17,7 +17,7 @@
         const sold = item.status !== "on_sale";
         return `
             <article class="product-card${sold ? " product-card--sold" : ""}">
-                <a class="product-card__link" href="${api.pageUrl(`product-detail.jsp?productId=${item.id}`)}">
+                <a class="product-card__link" href="${api.pageUrlWithReturn(`product-detail.jsp?productId=${item.id}`)}">
                     <div class="product-visual product-visual--${["mint", "sky", "peach", "lemon"][index % 4]}">
                         <span class="visual-label">${api.escapeHtml(categoryNames[item.category] || "二手好物")}</span>
                         <span class="product-emoji" aria-hidden="true">${emoji[item.category] || "✨"}</span>

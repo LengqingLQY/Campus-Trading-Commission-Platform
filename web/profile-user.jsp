@@ -75,13 +75,19 @@
                                 <label for="edit-phone">电话</label>
                                 <input type="text" id="edit-phone" name="phone" data-profile-input-phone>
                             </div>
-                            <div class="form-field form-field--full">
-                                <label for="edit-password">重置密码 <span>需同时填写旧密码和新密码</span></label>
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <fieldset class="form-field form-field--full profile-password-fieldset">
+                                <legend>重置密码 <span>需同时填写旧密码和新密码</span></legend>
+                                <div class="profile-password-grid">
+                                    <div>
+                                        <label for="edit-old-password">旧密码</label>
                                     <input type="password" id="edit-old-password" name="oldPassword" placeholder="旧密码">
+                                    </div>
+                                    <div>
+                                        <label for="edit-new-password">新密码</label>
                                     <input type="password" id="edit-new-password" name="newPassword" placeholder="新密码（至少6位）">
+                                    </div>
                                 </div>
-                            </div>
+                            </fieldset>
                         </div>
                         <p class="form-feedback" data-profile-feedback aria-live="polite"></p>
                         <div class="publish-actions">
@@ -93,7 +99,7 @@
                 </div>
 
                 <!-- ===== 我的记录 ===== -->
-                <div class="profile-records" data-profile-records>
+                <div class="profile-records" id="profile-records" data-profile-records>
                     <div class="section-heading" style="border-bottom:none;padding-bottom:0;">
                         <span class="section-heading__number">📋</span>
                         <div><h2>我的记录</h2><p>我发布的 · 我接取的 · 我购买的</p></div>
