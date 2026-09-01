@@ -2,16 +2,19 @@ package com.campus.errand.service;
 
 import com.campus.errand.dao.ProductDAO;
 import com.campus.errand.dao.ProductOrderDAO;
+import com.campus.errand.dao.TerminationRequestDAO;
 import com.campus.errand.dto.PageResult;
 import com.campus.errand.dto.ProductCreateDTO;
 import com.campus.errand.exception.BizException;
 import com.campus.errand.pojo.Product;
 import com.campus.errand.pojo.ProductOrder;
 import com.campus.errand.pojo.ProductOrderDetail;
+import com.campus.errand.pojo.TerminationRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,6 +43,9 @@ public class ProductService {
 
     @Autowired
     private ProductOrderDAO productOrderDAO;
+
+    @Autowired
+    private TerminationRequestDAO terminationRequestDAO;
 
     public PageResult<Product> listProducts(String keyword, String sort, int page, int size) {
         if (page < 1) {
@@ -105,6 +111,35 @@ public class ProductService {
     }
 
     /**
+     * 发布者软删除商品（增量契约：二手商品来源返回与发布者删除 §3）。
+     * 仅本人、未删除、且状态非 sold 时可删；不物理删除商品或关联订单。
+     */
+    public void deleteProduct(int productId, int currentUserId) {
+        Product product = productDAO.findById(productId);
+        if (product == null || (product.getIsDeleted() != null && product.getIsDeleted() == 1)) {
+            throw new BizException(404, "商品不存在");
+        }
+        if (product.getSellerId() == null || product.getSellerId() != currentUserId) {
+            throw new BizException(403, "只能删除自己发布的商品");
+        }
+        if ("sold".equals(product.getStatus())) {
+            throw new BizException(409, "交易进行中的商品不能删除");
+        }
+        int rows = productDAO.softDelete(productId, currentUserId);
+        if (rows == 0) {
+            // 并发下状态可能已变化，重新读取后返回精确错误码，不能误报成功
+            Product now = productDAO.findById(productId);
+            if (now == null || (now.getIsDeleted() != null && now.getIsDeleted() == 1)) {
+                throw new BizException(404, "商品不存在");
+            }
+            if (now.getSellerId() != null && now.getSellerId() != currentUserId) {
+                throw new BizException(403, "只能删除自己发布的商品");
+            }
+            throw new BizException(409, "交易进行中的商品不能删除");
+        }
+    }
+
+    /**
      * 购买商品（三层防护，事务内）：校验可见且非自己发布 →
      * UPDATE ... WHERE status='on_sale' → INSERT 购买记录（UNIQUE/CHECK 兜底）。
      */
@@ -141,6 +176,7 @@ public class ProductService {
         } else {
             throw new BizException(403, "无权限查看该订单");
         }
+        detail.setTerminationRequest(terminationRequestDAO.findPendingByOrderId(orderId));
         return detail;
     }
 
@@ -156,6 +192,9 @@ public class ProductService {
         }
         if (order.getSellerId() == null || order.getSellerId() != currentUserId) {
             throw new BizException(403, "只有卖家可以确认交付");
+        }
+        if (terminationRequestDAO.hasPending(orderId)) {
+            throw new BizException(409, "有待处理的终止申请，不能确认交付");
         }
         int rows = productOrderDAO.markDelivered(orderId, currentUserId);
         if (rows == 0) {
@@ -176,11 +215,126 @@ public class ProductService {
         if (order.getBuyerId() == null || order.getBuyerId() != currentUserId) {
             throw new BizException(403, "只有买家可以确认收货");
         }
+        if (terminationRequestDAO.hasPending(orderId)) {
+            throw new BizException(409, "有待处理的终止申请，不能确认收货");
+        }
         int rows = productOrderDAO.markCompleted(orderId, currentUserId);
         if (rows == 0) {
             throw new BizException(409, "当前状态不允许该操作");
         }
         productDAO.markCompleted(order.getProductId());
+    }
+
+    /**
+     * 发起终止申请（增量契约：二手商品软删除确认与订单双向终止 §6.1）。
+     * 仅 created/delivered 可发起，同一订单最多一条 pending 申请。
+     */
+    public int createTerminationRequest(int orderId, int currentUserId, String reason) {
+        String trimmed = reason == null ? "" : reason.trim();
+        if (trimmed.length() < 2 || trimmed.length() > 200) {
+            throw new BizException(400, "终止原因需为 2～200 字");
+        }
+        ProductOrder order = requireOrder(orderId);
+        requireParticipant(order, currentUserId);
+        if (!"created".equals(order.getStatus()) && !"delivered".equals(order.getStatus())) {
+            throw new BizException(409, "当前订单状态不允许终止");
+        }
+        if (terminationRequestDAO.hasPending(orderId)) {
+            throw new BizException(409, "已有待处理的终止申请");
+        }
+        return terminationRequestDAO.insert(orderId, currentUserId, trimmed);
+    }
+
+    /**
+     * 发起方撤回终止申请（§6.2）：仅发起方可操作，pending -> withdrawn。
+     */
+    public void withdrawTerminationRequest(int orderId, int currentUserId) {
+        ProductOrder order = requireOrder(orderId);
+        requireParticipant(order, currentUserId);
+        TerminationRequest request = pendingRequest(orderId);
+        if (requesterIdOf(order, request) != currentUserId) {
+            throw new BizException(403, "只有发起方可以撤回终止申请");
+        }
+        if (terminationRequestDAO.markWithdrawn(request.getId(), currentUserId) == 0) {
+            throw new BizException(409, "订单状态已变化，请刷新后重试");
+        }
+    }
+
+    /**
+     * 另一方拒绝终止申请（§6.3）：仅非发起方可操作，pending -> rejected。
+     */
+    public void rejectTerminationRequest(int orderId, int currentUserId) {
+        ProductOrder order = requireOrder(orderId);
+        requireParticipant(order, currentUserId);
+        TerminationRequest request = pendingRequest(orderId);
+        if (requesterIdOf(order, request) == currentUserId) {
+            throw new BizException(403, "不能处理自己发起的终止申请");
+        }
+        if (terminationRequestDAO.markResolved(request.getId(), currentUserId, "rejected") == 0) {
+            throw new BizException(409, "订单状态已变化，请刷新后重试");
+        }
+    }
+
+    /**
+     * 另一方同意终止（§6.4、§7 原子事务）：申请 approved、订单 cancelled、商品 on_sale，
+     * 三步任一更新失败整体回滚，避免「订单已终止但商品仍售出」等中间态。
+     */
+    @Transactional
+    public Map<String, Object> approveTerminationRequest(int orderId, int currentUserId) {
+        ProductOrder order = requireOrder(orderId);
+        requireParticipant(order, currentUserId);
+        TerminationRequest request = pendingRequest(orderId);
+        if (requesterIdOf(order, request) == currentUserId) {
+            throw new BizException(403, "不能处理自己发起的终止申请");
+        }
+
+        if (terminationRequestDAO.markResolved(request.getId(), currentUserId, "approved") == 0) {
+            throw new BizException(409, "订单状态已变化，请刷新后重试");
+        }
+        if (productOrderDAO.markCancelled(orderId) == 0) {
+            throw new BizException(409, "订单状态已变化，请刷新后重试");
+        }
+        if (productDAO.markOnSale(order.getProductId()) == 0) {
+            throw new BizException(409, "订单状态已变化，请刷新后重试");
+        }
+
+        return Map.of(
+                "orderId", orderId,
+                "orderStatus", "cancelled",
+                "productId", order.getProductId(),
+                "productStatus", "on_sale");
+    }
+
+    /** 按 id 查订单，不存在返回 404。 */
+    private ProductOrder requireOrder(int orderId) {
+        ProductOrder order = productOrderDAO.findById(orderId);
+        if (order == null) {
+            throw new BizException(404, "订单不存在");
+        }
+        return order;
+    }
+
+    /** 当前用户必须是订单买家或卖家，否则 403。 */
+    private void requireParticipant(ProductOrder order, int currentUserId) {
+        boolean seller = order.getSellerId() != null && order.getSellerId() == currentUserId;
+        boolean buyer = order.getBuyerId() != null && order.getBuyerId() == currentUserId;
+        if (!seller && !buyer) {
+            throw new BizException(403, "无权限操作该订单");
+        }
+    }
+
+    /** 查待处理申请，不存在返回 404。 */
+    private TerminationRequest pendingRequest(int orderId) {
+        TerminationRequest request = terminationRequestDAO.findPendingByOrderId(orderId);
+        if (request == null) {
+            throw new BizException(404, "终止申请不存在");
+        }
+        return request;
+    }
+
+    /** 由 requesterRole 反推发起方用户 id，用于撤回/同意/拒绝的权限判断。 */
+    private int requesterIdOf(ProductOrder order, TerminationRequest request) {
+        return "buyer".equals(request.getRequesterRole()) ? order.getBuyerId() : order.getSellerId();
     }
 
     /**
@@ -196,15 +350,25 @@ public class ProductService {
         int offset = (page - 1) * size;
         String t = type == null ? "published" : type;
         if ("published".equals(t)) {
-            return new PageResult<>(
-                    productDAO.findPublishedByUser(userId, offset, size),
-                    productDAO.countPublishedByUser(userId), page, size);
+            List<Product> list = productDAO.findPublishedByUser(userId, offset, size);
+            attachTerminationRequests(list);
+            return new PageResult<>(list, productDAO.countPublishedByUser(userId), page, size);
         }
         if ("bought".equals(t)) {
-            return new PageResult<>(
-                    productDAO.findBoughtByUser(userId, offset, size),
-                    productDAO.countBoughtByUser(userId), page, size);
+            List<Product> list = productDAO.findBoughtByUser(userId, offset, size);
+            attachTerminationRequests(list);
+            return new PageResult<>(list, productDAO.countBoughtByUser(userId), page, size);
         }
         throw new BizException(400, "type 不合法");
+    }
+
+    /** 给进行中订单项附带待处理终止申请，供主界面置顶提示（契约 §5.2）。 */
+    private void attachTerminationRequests(List<Product> products) {
+        for (Product p : products) {
+            if (p.getOrderId() != null && p.getOrderStatus() != null
+                    && ("created".equals(p.getOrderStatus()) || "delivered".equals(p.getOrderStatus()))) {
+                p.setTerminationRequest(terminationRequestDAO.findPendingByOrderId(p.getOrderId()));
+            }
+        }
     }
 }

@@ -15,6 +15,7 @@ public class ProductOrder {
     private String createdAt;
     private String deliveredAt;     // 卖家点「确认已交付」的时间
     private String finishedAt;      // 买家点「确认收货」的时间
+    private String cancelledAt;     // 双方同意终止的时间
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
@@ -42,4 +43,7 @@ public class ProductOrder {
 
     public String getFinishedAt() { return finishedAt; }
     public void setFinishedAt(String finishedAt) { this.finishedAt = finishedAt; }
+
+    public String getCancelledAt() { return cancelledAt; }
+    public void setCancelledAt(String cancelledAt) { this.cancelledAt = cancelledAt; }
 }

@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS task_order (
 -- ============================ 5. 购买记录表 ============================
 CREATE TABLE IF NOT EXISTS product_order (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    product_id   INTEGER NOT NULL UNIQUE REFERENCES product(id), -- UNIQUE：一件商品只能被买一次
+    product_id   INTEGER NOT NULL REFERENCES product(id), -- 一件商品可有多条历史订单（终止后可再次售出）
     seller_id    INTEGER NOT NULL REFERENCES user(id),
     buyer_id     INTEGER NOT NULL REFERENCES user(id),
     price        REAL    NOT NULL DEFAULT 0,                     -- 成交价快照，卖家改价不影响历史记录
@@ -135,9 +135,36 @@ CREATE TABLE IF NOT EXISTS product_order (
     created_at   TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
     delivered_at TEXT,                                           -- 卖家点「确认已交付」的时间
     finished_at  TEXT,                                           -- 买家点「确认收货」的时间
+    cancelled_at TEXT,                                           -- 双方同意终止的时间
 
     CHECK (buyer_id <> seller_id)                                -- 不能购买自己的商品（§6 自操作）
 );
+
+-- 同一商品最多存在一条「非已终止」订单；终止后商品恢复 on_sale 可再次售出，
+-- 同时保留多条历史 cancelled 订单（增量契约：二手商品软删除确认与订单双向终止 §4.2）。
+CREATE UNIQUE INDEX IF NOT EXISTS uq_product_order_non_cancelled_product
+    ON product_order(product_id)
+ WHERE status <> 'cancelled';
+
+
+-- ============================ 6. 终止申请记录表 ============================
+-- 订单处于 created/delivered 时买卖任一方可发起终止申请，另一方同意后才真正终止。
+CREATE TABLE IF NOT EXISTS product_order_termination_request (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id     INTEGER NOT NULL REFERENCES product_order(id),
+    requester_id INTEGER NOT NULL REFERENCES user(id),           -- 发起终止的一方
+    reason       TEXT    NOT NULL,                               -- 2~200 字，对方可见
+    status       TEXT    NOT NULL DEFAULT 'pending'
+                         CHECK (status IN ('pending', 'approved', 'rejected', 'withdrawn')),
+    responder_id INTEGER REFERENCES user(id),                    -- 处理终止的另一方
+    created_at   TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+    resolved_at  TEXT
+);
+
+-- 同一订单最多存在一条待处理申请
+CREATE UNIQUE INDEX IF NOT EXISTS uq_product_order_pending_termination
+    ON product_order_termination_request(order_id)
+ WHERE status = 'pending';
 
 
 -- ============================ 索引 ============================

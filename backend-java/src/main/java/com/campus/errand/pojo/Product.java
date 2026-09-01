@@ -39,6 +39,7 @@ public class Product {
     private String buyTime;
     private String deliveredAt;     // 卖家确认交付时间（product_order）
     private String finishedAt;      // 买家确认收货时间（product_order）
+    private TerminationRequest terminationRequest;  // 进行中订单的待处理终止申请，无则 null
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
@@ -117,4 +118,7 @@ public class Product {
 
     public String getFinishedAt() { return finishedAt; }
     public void setFinishedAt(String finishedAt) { this.finishedAt = finishedAt; }
+
+    public TerminationRequest getTerminationRequest() { return terminationRequest; }
+    public void setTerminationRequest(TerminationRequest terminationRequest) { this.terminationRequest = terminationRequest; }
 }

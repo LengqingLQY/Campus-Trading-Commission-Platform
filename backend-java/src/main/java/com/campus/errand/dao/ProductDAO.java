@@ -100,13 +100,39 @@ public class ProductDAO {
                 productId);
     }
 
+    /**
+     * 终止订单生效后，商品恢复待售（sold -> on_sale）。
+     * 返回受影响行数（0 = 商品已不在售出状态）。
+     */
+    public int markOnSale(int productId) {
+        return jdbc.update(
+                "UPDATE product SET status='on_sale', updated_at=datetime('now','localtime') "
+              + "WHERE id=? AND status='sold'",
+                productId);
+    }
+
+    /**
+     * 发布者软删除：仅在本人、未删除、且状态非 sold 时置 is_deleted=1。
+     * 返回受影响行数（0 = 非本人 / 已删除 / 交易进行中，由 Service 二次判断返回精确错误码）。
+     */
+    public int softDelete(int productId, int sellerId) {
+        return jdbc.update(
+                "UPDATE product SET is_deleted=1, deleted_by=?, "
+              + "deleted_at=datetime('now','localtime'), updated_at=datetime('now','localtime') "
+              + "WHERE id=? AND seller_id=? AND is_deleted=0 AND status IN ('on_sale','completed')",
+                sellerId, productId, sellerId);
+    }
+
     /** 个人空间：我发布的商品（已售出时附买家与成交信息）。 */
     public List<Product> findPublishedByUser(int sellerId, int offset, int size) {
         String sql = "SELECT p.*, o.id AS orderId, o.buyer_id AS buyerId, "
                 + "u2.username AS buyerName, o.price AS dealPrice, o.status AS orderStatus, o.created_at AS buyTime, "
                 + "o.delivered_at AS deliveredAt, o.finished_at AS finishedAt "
                 + "FROM product p "
-                + "LEFT JOIN product_order o ON o.product_id = p.id "
+                + "LEFT JOIN product_order o ON o.id = ("
+                + "    SELECT po.id FROM product_order po WHERE po.product_id = p.id "
+                + "    ORDER BY (po.status <> 'cancelled') DESC, po.created_at DESC, po.id DESC LIMIT 1"
+                + ") "
                 + "LEFT JOIN user u2 ON u2.id = o.buyer_id "
                 + "WHERE p.seller_id = ? AND p.is_deleted = 0 "
                 + "ORDER BY p.created_at DESC LIMIT ? OFFSET ?";

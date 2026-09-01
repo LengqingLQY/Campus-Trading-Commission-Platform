@@ -23,10 +23,13 @@ public class ProductOrderDAO {
     private JdbcTemplate jdbc;
 
     /**
-     * 按商品查购买记录。查不到返回 null。
+     * 按商品查最新一条未终止订单。查不到返回 null。
+     * 商品终止后可再次售出，故同一商品可能有多条历史订单，此处只取非 cancelled 的最新一条
+     * （增量契约：二手商品软删除确认与订单双向终止 §4.3）。
      */
     public ProductOrder findByProductId(int productId) {
-        String sql = "SELECT * FROM product_order WHERE product_id = ?";
+        String sql = "SELECT * FROM product_order WHERE product_id = ? AND status <> 'cancelled' "
+                + "ORDER BY created_at DESC, id DESC LIMIT 1";
         List<ProductOrder> list = jdbc.query(sql, new BeanPropertyRowMapper<>(ProductOrder.class), productId);
         return list.isEmpty() ? null : list.get(0);
     }
@@ -47,6 +50,7 @@ public class ProductOrderDAO {
     public ProductOrderDetail findDetail(int orderId) {
         String sql = "SELECT o.id, o.product_id AS productId, o.seller_id AS sellerId, o.buyer_id AS buyerId, "
                 + "o.price, o.status, o.created_at AS createdAt, o.delivered_at AS deliveredAt, o.finished_at AS finishedAt, "
+                + "o.cancelled_at AS cancelledAt, "
                 + "p.title AS productTitle, p.description AS productDescription, p.category, p.condition, "
                 + "p.location, p.contact, "
                 + "su.username AS sellerName, su.qq AS sellerQq, su.wechat AS sellerWechat, su.phone AS sellerPhone, "
@@ -100,5 +104,16 @@ public class ProductOrderDAO {
                 "UPDATE product_order SET status='completed', finished_at=datetime('now','localtime') "
               + "WHERE id=? AND buyer_id=? AND status='delivered'",
                 orderId, buyerId);
+    }
+
+    /**
+     * 双方同意终止：created/delivered -> cancelled，写 cancelled_at。
+     * 返回受影响行数（0 = 订单已不在可终止状态，应由上层回滚并返回 409）。
+     */
+    public int markCancelled(int orderId) {
+        return jdbc.update(
+                "UPDATE product_order SET status='cancelled', cancelled_at=datetime('now','localtime') "
+              + "WHERE id=? AND status IN ('created','delivered')",
+                orderId);
     }
 }

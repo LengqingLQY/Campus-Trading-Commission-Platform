@@ -36,6 +36,9 @@ public class ProductOrderDetail {
     private String createdAt;
     private String deliveredAt;
     private String finishedAt;
+    private String cancelledAt;     // 双方同意终止的时间
+
+    private TerminationRequest terminationRequest;  // 待处理终止申请，无则为 null
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
@@ -108,4 +111,10 @@ public class ProductOrderDetail {
 
     public String getFinishedAt() { return finishedAt; }
     public void setFinishedAt(String finishedAt) { this.finishedAt = finishedAt; }
+
+    public String getCancelledAt() { return cancelledAt; }
+    public void setCancelledAt(String cancelledAt) { this.cancelledAt = cancelledAt; }
+
+    public TerminationRequest getTerminationRequest() { return terminationRequest; }
+    public void setTerminationRequest(TerminationRequest terminationRequest) { this.terminationRequest = terminationRequest; }
 }
