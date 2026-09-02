@@ -99,6 +99,55 @@
         }
     }
 
+    // ===== 删除函数 =====
+    async function deleteTaskFromProfile(taskId, element) {
+        if (!confirm("确认删除这个任务吗？\n删除后任务会从列表和个人空间中隐藏。")) return;
+        try {
+            await api.request(`/tasks/${taskId}`, { method: "DELETE" });
+            api.toast("任务已删除", "success");
+            element.remove();
+        } catch (error) {
+            api.toast(error.message || "删除失败，请稍后重试", "error");
+        }
+    }
+
+    async function deleteProductFromProfile(productId, element) {
+        if (!confirm("确认删除这个商品吗？\n删除后商品会从列表和个人空间中隐藏。")) return;
+        try {
+            await api.request(`/products/${productId}`, { method: "DELETE" });
+            api.toast("商品已删除", "success");
+            element.remove();
+        } catch (error) {
+            api.toast(error.message || "删除失败，请稍后重试", "error");
+        }
+    }
+
+    // ===== 绑定删除事件 =====
+    function bindDeleteEvents() {
+        document.querySelectorAll("[data-delete-task]").forEach((btn) => {
+            btn.removeEventListener("click", handleTaskDelete);
+            btn.addEventListener("click", handleTaskDelete);
+        });
+        document.querySelectorAll("[data-delete-product]").forEach((btn) => {
+            btn.removeEventListener("click", handleProductDelete);
+            btn.addEventListener("click", handleProductDelete);
+        });
+    }
+
+    function handleTaskDelete(event) {
+        const btn = event.currentTarget;
+        const taskId = Number(btn.dataset.deleteTask);
+        const record = btn.closest(".record-item");
+        if (record) deleteTaskFromProfile(taskId, record);
+    }
+
+    function handleProductDelete(event) {
+        const btn = event.currentTarget;
+        const productId = Number(btn.dataset.deleteProduct);
+        const record = btn.closest(".record-item");
+        if (record) deleteProductFromProfile(productId, record);
+    }
+
     // ===== 渲染记录列表 =====
     function renderRecords(data, type) {
         const list = document.querySelector("[data-record-list]");
@@ -122,30 +171,44 @@
             items.forEach((item) => {
                 const st = statusNames[item.status] || item.status;
                 const cls = statusClass[item.status] || "";
+                const canDelete = item.status === "open" || item.status === "completed";
+                const deleteBtn = canDelete
+                    ? `<button class="btn-sm btn-danger" data-delete-task="${item.id}" style="padding:2px 10px;font-size:11px;border:none;border-radius:6px;background:#ff4d4f;color:#fff;cursor:pointer;">删除</button>`
+                    : `<span class="status-tag" style="background:#f5f5f5;color:#999;font-size:10px;">不可删除</span>`;
                 html += `
-                    <a class="record-item" href="${api.pageUrl(`task-detail.jsp?taskId=${item.id}`)}">
-                        <div class="record-info">
+                    <div class="record-item" data-task-id="${item.id}">
+                        <a class="record-info" href="${api.pageUrlWithReturn(`task-detail.jsp?taskId=${item.id}`, profileReturnPath(type))}" style="flex:1;text-decoration:none;color:inherit;">
                             <span class="record-title">${api.escapeHtml(item.title)}</span>
                             <span class="status-tag ${cls}">${api.escapeHtml(st)}</span>
                             <p class="record-meta">金额：${api.money(item.amount)} 元</p>
+                        </a>
+                        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                            <span class="record-date">${api.shortTime(item.createdAt)}</span>
+                            ${deleteBtn}
                         </div>
-                        <span class="record-date">${api.shortTime(item.createdAt)}</span>
-                    </a>`;
+                    </div>`;
             });
         } else if (type === "published-products") {
             html = `<div class="record-section-label">📌 我上架的商品</div>`;
             items.forEach((item) => {
                 const st = statusNames[item.status] || item.status;
                 const cls = statusClass[item.status] || "";
+                const canDelete = item.status === "on_sale" || item.status === "completed";
+                const deleteBtn = canDelete
+                    ? `<button class="btn-sm btn-danger" data-delete-product="${item.id}" style="padding:2px 10px;font-size:11px;border:none;border-radius:6px;background:#ff4d4f;color:#fff;cursor:pointer;">删除</button>`
+                    : `<span class="status-tag" style="background:#f5f5f5;color:#999;font-size:10px;">不可删除</span>`;
                 html += `
-                    <a class="record-item" href="${api.pageUrlWithReturn(`product-detail.jsp?productId=${item.id}`, profileReturnPath(type))}">
-                        <div class="record-info">
+                    <div class="record-item" data-product-id="${item.id}">
+                        <a class="record-info" href="${api.pageUrlWithReturn(`product-detail.jsp?productId=${item.id}`, profileReturnPath(type))}" style="flex:1;text-decoration:none;color:inherit;">
                             <span class="record-title">${api.escapeHtml(item.title)}</span>
                             <span class="status-tag ${cls}">${api.escapeHtml(st)}</span>
                             <p class="record-meta">价格：${api.money(item.price)} 元</p>
+                        </a>
+                        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                            <span class="record-date">${api.shortTime(item.createdAt)}</span>
+                            ${deleteBtn}
                         </div>
-                        <span class="record-date">${api.shortTime(item.createdAt)}</span>
-                    </a>`;
+                    </div>`;
             });
         } else if (type === "accepted") {
             html = `<div class="record-section-label">📌 我接取的任务</div>`;
@@ -153,7 +216,7 @@
                 const st = statusNames[item.status] || item.status;
                 const cls = statusClass[item.status] || "";
                 html += `
-                    <a class="record-item" href="${api.pageUrl(`task-detail.jsp?taskId=${item.id}`)}">
+                    <a class="record-item" href="${api.pageUrlWithReturn(`task-detail.jsp?taskId=${item.id}`, profileReturnPath(type))}">
                         <div class="record-info">
                             <span class="record-title">${api.escapeHtml(item.title)}</span>
                             <span class="status-tag ${cls}">${api.escapeHtml(st)}</span>
@@ -180,6 +243,7 @@
         }
 
         list.innerHTML = html || `<div class="empty-state"><span>📭</span><h3>暂无记录</h3></div>`;
+        bindDeleteEvents();
     }
 
     // ===== 加载记录 =====

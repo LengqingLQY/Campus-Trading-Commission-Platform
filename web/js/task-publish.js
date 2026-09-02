@@ -74,7 +74,7 @@
                 }
             });
             api.toast("任务已发布！", "success");
-            location.href = api.pageUrl(`task-detail.jsp?taskId=${result.id}`);
+            location.href = api.pageUrlWithReturn(`task-detail.jsp?taskId=${result.id}`);
         } catch (error) {
             if (error.status !== 401) {
                 api.setFeedback(feedback, error.message || "发布失败，请稍后重试");

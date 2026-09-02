@@ -24,7 +24,7 @@
         const cls = statusClass[item.status] || "";
         return `
             <article class="product-card product-card--task">
-                <a class="product-card__link" href="${api.pageUrl(`task-detail.jsp?taskId=${item.id}`)}">
+                <a class="product-card__link" href="${api.pageUrlWithReturn(`task-detail.jsp?taskId=${item.id}`)}">
                     <div class="product-visual product-visual--${["mint", "sky", "peach", "lemon"][index % 4]}">
                         <span class="visual-label">跑腿任务</span>
                         <span class="product-emoji" aria-hidden="true">${index % 2 ? "🏃" : "📦"}</span>
