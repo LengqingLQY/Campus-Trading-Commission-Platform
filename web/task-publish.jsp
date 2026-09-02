@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/product.css">
+    <link rel="stylesheet" href="css/image-upload.css">
     <link rel="stylesheet" href="css/functional.css">
     <title>CTCP · 发布跑腿任务</title>
 </head>
@@ -84,10 +85,18 @@
             <aside class="publish-aside">
                 <div class="publish-preview-card">
                     <div class="publish-preview-card__head"><span>发布预览</span><span class="preview-dots">•••</span></div>
-                    <div class="publish-preview-visual">
-                        <span class="publish-preview-visual__emoji">📦</span>
-                        <span class="publish-preview-visual__hint">跑腿任务</span>
+
+                    <!-- ===== 图片上传区域 ===== -->
+                    <div class="publish-preview-visual image-upload-zone" data-task-upload-zone>
+                        <div class="image-upload-placeholder" data-upload-placeholder>
+                            <span class="upload-icon">📷</span>
+                            <span class="upload-text">点击上传图片</span>
+                            <span class="upload-hint">支持 JPG、PNG，最多 3 张</span>
+                        </div>
+                        <div class="image-upload-grid" data-task-images></div>
+                        <input type="file" id="taskImageInput" accept="image/*" multiple style="display:none;">
                     </div>
+
                     <span class="preview-tag" data-preview-status>待接取</span>
                     <h3 data-preview-title>你的任务标题</h3>
                     <p data-preview-description>填写说明后，这里会显示任务简介。</p>
@@ -95,7 +104,9 @@
                         <strong data-preview-amount>￥ 0.00</strong>
                         <span data-preview-deadline>时间待定</span>
                     </div>
+                    <div class="preview-image-count" data-image-count>已上传 0/3</div>
                 </div>
+
                 <div class="publish-process">
                     <h3>发布流程</h3>
                     <ol>
@@ -109,6 +120,7 @@
     </main>
 </div>
 <script src="js/api.js"></script>
+<script src="js/image-upload.js"></script>
 <script src="js/task-publish.js"></script>
 </body>
 </html>

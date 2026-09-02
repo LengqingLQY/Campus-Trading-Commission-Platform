@@ -45,7 +45,15 @@
                     </div>
 
                     <div class="profile-avatar-row">
-                        <span class="profile-avatar-lg user" data-profile-avatar-lg>A</span>
+                        <!-- ===== 头像区域（点击上传） ===== -->
+                        <div class="profile-avatar-lg user" data-profile-avatar-lg>
+                            <span class="avatar-letter" data-avatar-letter>A</span>
+                            <div class="avatar-upload-overlay">
+                                <span class="upload-icon">📷</span>
+                                <span class="upload-text">更换头像</span>
+                            </div>
+                        </div>
+                        <input type="file" id="avatarInput" accept="image/*" style="display:none;">
                         <div>
                             <span class="profile-name" data-profile-username>加载中</span>
                             <span class="profile-role user">普通用户</span>
@@ -80,11 +88,11 @@
                                 <div class="profile-password-grid">
                                     <div>
                                         <label for="edit-old-password">旧密码</label>
-                                    <input type="password" id="edit-old-password" name="oldPassword" placeholder="旧密码">
+                                        <input type="password" id="edit-old-password" name="oldPassword" placeholder="旧密码">
                                     </div>
                                     <div>
                                         <label for="edit-new-password">新密码</label>
-                                    <input type="password" id="edit-new-password" name="newPassword" placeholder="新密码（至少6位）">
+                                        <input type="password" id="edit-new-password" name="newPassword" placeholder="新密码（至少6位）">
                                     </div>
                                 </div>
                             </fieldset>

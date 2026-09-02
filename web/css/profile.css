@@ -547,3 +547,52 @@
         order: -1;
     }
 }
+
+/* ===== 头像上传遮罩样式 ===== */
+.profile-avatar-lg {
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.profile-avatar-lg .avatar-letter {
+    position: relative;
+    z-index: 1;
+}
+
+.avatar-upload-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    z-index: 2;
+    cursor: pointer;
+}
+
+.profile-avatar-lg:hover .avatar-upload-overlay {
+    opacity: 1;
+}
+
+.avatar-upload-overlay .upload-icon {
+    font-size: 24px;
+    line-height: 1;
+}
+
+.avatar-upload-overlay .upload-text {
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 500;
+}
