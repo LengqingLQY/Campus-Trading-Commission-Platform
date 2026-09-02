@@ -49,8 +49,10 @@
                 } else {
                     avatarContainer.style.backgroundImage = "";
                     var letterEl2 = avatarContainer.querySelector("[data-avatar-letter]");
-                    if (letterEl2) letterEl2.style.display = "";
-                    avatarContainer.querySelector("[data-avatar-letter]").textContent = initialLetter;
+                    if (letterEl2) {
+                        letterEl2.style.display = "";
+                        letterEl2.textContent = initialLetter;
+                    }
                 }
             }
 
@@ -122,7 +124,9 @@
         var fileInput = document.querySelector("#avatarInput");
         if (!avatarContainer || !fileInput) return;
 
-        avatarContainer.addEventListener("click", function() {
+        // 点击头像触发上传（但点击「恢复默认」时不上传）
+        avatarContainer.addEventListener("click", function(e) {
+            if (e.target.closest("[data-action='reset-avatar']")) return;
             fileInput.click();
         });
 
@@ -164,12 +168,43 @@
                 })
                 .catch(function(error) {
                     alert("头像上传失败：" + error.message);
-                    // 回退到原头像
                     loadProfile();
                 });
             };
             reader.readAsDataURL(file);
         });
+
+        // ===== 恢复默认头像 =====
+        var resetBtn = avatarContainer.querySelector("[data-action='reset-avatar']");
+        if (resetBtn) {
+            resetBtn.addEventListener("click", function(e) {
+                e.stopPropagation();
+                if (!confirm("确认恢复默认头像吗？")) return;
+
+                // 清除背景图，显示字母
+                avatarContainer.style.backgroundImage = "";
+                var letterEl = avatarContainer.querySelector("[data-avatar-letter]");
+                if (letterEl) {
+                    letterEl.style.display = "";
+                    letterEl.textContent = api.initial(userData ? userData.username : "同");
+                }
+
+                // 调用后端清空 avatarUrl
+                api.request("/users/me", {
+                    method: "PUT",
+                    body: { avatarUrl: "" }
+                })
+                .then(function() {
+                    api.toast("已恢复默认头像", "success");
+                    api.resetCurrentUser();
+                    loadProfile();
+                })
+                .catch(function(error) {
+                    api.toast("操作失败：" + error.message, "error");
+                    loadProfile();
+                });
+            });
+        }
     }
 
     // ===== 删除函数 =====
@@ -368,7 +403,7 @@
             initTabs();
             loadRecords(currentTab);
 
-            // 头像上传
+            // 头像上传 + 恢复默认
             initAvatarUpload();
         } catch (error) {
             if (error.status === 401) {

@@ -50,7 +50,9 @@
                             <span class="avatar-letter" data-avatar-letter>A</span>
                             <div class="avatar-upload-overlay">
                                 <span class="upload-icon">📷</span>
-                                <span class="upload-text">更换头像</span>
+                                <span class="upload-text" data-action="upload-avatar">更换头像</span>
+                                <span class="upload-divider">|</span>
+                                <span class="upload-text" data-action="reset-avatar">恢复默认</span>
                             </div>
                         </div>
                         <input type="file" id="avatarInput" accept="image/*" style="display:none;">

@@ -596,3 +596,21 @@
     font-size: 11px;
     font-weight: 500;
 }
+
+/* ===== 头像遮罩分隔符 ===== */
+.avatar-upload-overlay .upload-divider {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+    margin: 0 4px;
+}
+
+.avatar-upload-overlay .upload-text {
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.avatar-upload-overlay .upload-text:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
