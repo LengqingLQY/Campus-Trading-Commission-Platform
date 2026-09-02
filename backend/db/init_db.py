@@ -39,7 +39,7 @@ SCHEMA_PATH = os.path.join(BASE_DIR, "schema.sql")
 DEFAULT_DB_PATH = os.path.join(BASE_DIR, "app.db")
 
 # 建表顺序的倒序，先删子表再删父表
-DROP_ORDER = ["product_order_termination_request", "product_order", "task_order", "product", "task", "user"]
+DROP_ORDER = ["product_order_termination_request", "task_termination_request", "product_order", "task_order", "product", "task", "user"]
 VIEWS = ["v_public_task", "v_public_product"]
 
 

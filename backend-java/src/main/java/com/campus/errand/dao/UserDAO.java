@@ -84,6 +84,15 @@ public class UserDAO {
     }
 
     /**
+     * 更新头像 URL（增量契约：图片功能 §3.2）。空字符串表示恢复默认头像。
+     */
+    public int updateAvatar(int id, String avatarUrl) {
+        return jdbc.update(
+                "UPDATE user SET avatar_url=?, updated_at=datetime('now','localtime') WHERE id=?",
+                avatarUrl, id);
+    }
+
+    /**
      * 更新密码哈希。
      */
     public int updatePassword(int id, String passwordHash) {

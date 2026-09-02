@@ -20,6 +20,7 @@ public class Product {
     private Double price;
     private String location;
     private String contact;
+    private String imageUrls;       // 逗号分隔的图片 URL（增量契约：图片功能 §2，暂未接接口）
     private String auditStatus;
     private String auditRemark;
     private String status;          // on_sale / sold / completed
@@ -67,6 +68,9 @@ public class Product {
 
     public String getContact() { return contact; }
     public void setContact(String contact) { this.contact = contact; }
+
+    public String getImageUrls() { return imageUrls; }
+    public void setImageUrls(String imageUrls) { this.imageUrls = imageUrls; }
 
     public String getAuditStatus() { return auditStatus; }
     public void setAuditStatus(String auditStatus) { this.auditStatus = auditStatus; }

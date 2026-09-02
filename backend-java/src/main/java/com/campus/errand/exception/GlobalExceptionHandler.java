@@ -10,6 +10,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * 统一异常处理：Controller 内不写 try-catch，所有异常在这里转成统一响应结构，
@@ -68,6 +69,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
         return ResponseEntity.status(400)
                 .body(Result.fail(400, "请求参数格式不正确"));
+    }
+
+    /**
+     * 上传文件超过大小上限（增量契约：图片功能 §3.1，5MB）。
+     * 由 multipart 配置触发，返回 400 而非漏到兜底 500。
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Result> handleMaxUpload(MaxUploadSizeExceededException e) {
+        return ResponseEntity.status(400)
+                .body(Result.fail(400, "图片超过大小限制"));
     }
 
     /**

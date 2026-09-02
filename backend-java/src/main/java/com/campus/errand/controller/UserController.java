@@ -4,11 +4,13 @@ import com.campus.errand.dto.RegisterDTO;
 import com.campus.errand.dto.UserUpdateDTO;
 import com.campus.errand.pojo.Result;
 import com.campus.errand.pojo.User;
+import com.campus.errand.service.FileStorageService;
 import com.campus.errand.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -24,6 +26,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     /**
      * POST /api/register —— 注册，返回新用户 id。
@@ -79,12 +84,23 @@ public class UserController {
     }
 
     /**
-     * PUT /api/users/me —— 修改当前用户资料 / 改密码。
+     * PUT /api/users/me —— 修改当前用户资料 / 改密码 / 恢复默认头像。
      */
     @PutMapping("/users/me")
     public Result updateMe(@RequestBody UserUpdateDTO dto, HttpSession session) {
         User sessionUser = (User) session.getAttribute("user");
         userService.updateMe(sessionUser.getId(), dto);
         return Result.ok();
+    }
+
+    /**
+     * POST /api/users/me/avatar —— 上传头像（multipart 字段名 avatar）。
+     */
+    @PostMapping("/users/me/avatar")
+    public Result uploadAvatar(@RequestParam("avatar") MultipartFile avatar, HttpSession session) {
+        User sessionUser = (User) session.getAttribute("user");
+        String url = fileStorageService.storeImage(avatar);
+        userService.updateAvatar(sessionUser.getId(), url);
+        return Result.ok(Map.of("avatarUrl", url));
     }
 }
