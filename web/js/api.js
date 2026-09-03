@@ -216,6 +216,10 @@
             node.textContent = initial(user && user.username);
         });
 
+        document.querySelectorAll("[data-admin-link]").forEach((node) => {
+            node.style.display = user && user.role === "admin" ? "" : "none";
+        });
+
         const logout = document.querySelector("[data-action='logout']");
         if (logout) {
             logout.addEventListener("click", async (event) => {

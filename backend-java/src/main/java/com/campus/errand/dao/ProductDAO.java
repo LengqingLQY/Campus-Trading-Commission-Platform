@@ -26,7 +26,7 @@ public class ProductDAO {
     public List<Product> findPublic(String keyword, String orderBy, int offset, int size) {
         String p = likePattern(keyword);
         String sql = "SELECT t.id, t.title, t.description, t.category, t.condition, t.price, "
-                + "t.location, t.status, t.seller_id, t.created_at, u.username AS sellerName "
+                + "t.image_urls, t.location, t.status, t.seller_id, t.created_at, u.username AS sellerName "
                 + "FROM v_public_product t JOIN user u ON u.id = t.seller_id "
                 + "WHERE t.title LIKE ? ESCAPE '\\' OR t.description LIKE ? ESCAPE '\\' "
                 + "ORDER BY " + orderBy + " LIMIT ? OFFSET ?";
@@ -43,7 +43,7 @@ public class ProductDAO {
 
     public Product findPublicDetail(int id) {
         String sql = "SELECT t.id, t.title, t.description, t.category, t.condition, t.price, "
-                + "t.location, t.contact, t.audit_status, t.audit_remark, t.status, t.seller_id, "
+                + "t.image_urls, t.location, t.contact, t.audit_status, t.audit_remark, t.status, t.seller_id, "
                 + "t.created_at, t.updated_at, u.username AS sellerName "
                 + "FROM v_public_product t JOIN user u ON u.id = t.seller_id WHERE t.id = ?";
         List<Product> list = jdbc.query(sql, new BeanPropertyRowMapper<>(Product.class), id);
@@ -57,14 +57,14 @@ public class ProductDAO {
     }
 
     /**
-     * 发布商品：audit_status 固定 approved、status 固定 on_sale。返回自增主键 id。
+     * 发布商品：audit_status 固定 pending（待管理员审核）、status 固定 on_sale。返回自增主键 id。
      */
     public int insert(Product product) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbc.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(
-                    "INSERT INTO product (seller_id, title, description, category, condition, price, location, contact, audit_status, status) "
-                  + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved', 'on_sale')",
+                    "INSERT INTO product (seller_id, title, description, category, condition, price, location, contact, image_urls, audit_status, status) "
+                  + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'on_sale')",
                     Statement.RETURN_GENERATED_KEYS);
             ps.setInt(1, product.getSellerId());
             ps.setString(2, product.getTitle());
@@ -74,6 +74,7 @@ public class ProductDAO {
             ps.setDouble(6, product.getPrice());
             ps.setString(7, product.getLocation());
             ps.setString(8, product.getContact());
+            ps.setString(9, product.getImageUrls());
             return ps;
         }, keyHolder);
         Number key = keyHolder.getKey();
@@ -164,6 +165,51 @@ public class ProductDAO {
                 "SELECT COUNT(*) FROM product_order WHERE buyer_id = ?",
                 Long.class, buyerId);
         return count == null ? 0 : count;
+    }
+
+    // ============================ 管理员 ============================
+
+    /**
+     * 管理员商品列表：查原始 product 表（不过滤审核状态，但排除已软删除），
+     * 可按 auditStatus 与关键词过滤。auditStatus 传 null 表示不过滤。
+     */
+    public List<Product> findAdminList(String auditStatus, String keyword, int offset, int size) {
+        String p = likePattern(keyword);
+        String sql = "SELECT t.*, u.username AS sellerName "
+                + "FROM product t JOIN user u ON u.id = t.seller_id "
+                + "WHERE t.is_deleted = 0 "
+                + "AND (? IS NULL OR t.audit_status = ?) "
+                + "AND (t.title LIKE ? ESCAPE '\\' OR t.description LIKE ? ESCAPE '\\') "
+                + "ORDER BY t.created_at DESC LIMIT ? OFFSET ?";
+        return jdbc.query(sql, new BeanPropertyRowMapper<>(Product.class),
+                auditStatus, auditStatus, p, p, size, offset);
+    }
+
+    public long countAdminList(String auditStatus, String keyword) {
+        String p = likePattern(keyword);
+        String sql = "SELECT COUNT(*) FROM product t "
+                + "WHERE t.is_deleted = 0 "
+                + "AND (? IS NULL OR t.audit_status = ?) "
+                + "AND (t.title LIKE ? ESCAPE '\\' OR t.description LIKE ? ESCAPE '\\')";
+        Long count = jdbc.queryForObject(sql, Long.class, auditStatus, auditStatus, p, p);
+        return count == null ? 0 : count;
+    }
+
+    /** 管理员审核：只改 audit_status 与 audit_remark，不动业务 status。返回受影响行数。 */
+    public int audit(int id, String auditStatus, String remark) {
+        return jdbc.update(
+                "UPDATE product SET audit_status=?, audit_remark=?, updated_at=datetime('now','localtime') "
+              + "WHERE id=? AND is_deleted=0",
+                auditStatus, remark, id);
+    }
+
+    /** 管理员软删除：不限发布者，直接置 is_deleted=1。返回受影响行数。 */
+    public int softDeleteByAdmin(int id, int adminId) {
+        return jdbc.update(
+                "UPDATE product SET is_deleted=1, deleted_by=?, "
+              + "deleted_at=datetime('now','localtime'), updated_at=datetime('now','localtime') "
+              + "WHERE id=? AND is_deleted=0",
+                adminId, id);
     }
 
     private static String likePattern(String keyword) {

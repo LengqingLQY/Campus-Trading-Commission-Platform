@@ -14,6 +14,17 @@
     let currentUser = null;
     let orderLink = null;
 
+    // ===== 图片渲染函数（平铺） =====
+    function renderImages(imageUrls) {
+        if (!imageUrls) return "";
+        const urls = imageUrls.split(",").filter((u) => u && u.trim());
+        if (urls.length === 0) return "";
+        const items = urls.map((url) =>
+            `<div class="detail-image-item"><img src="${api.escapeHtml(url.trim())}" alt="商品图片"></div>`
+        ).join("");
+        return `<div class="detail-image-grid">${items}</div>`;
+    }
+
     function resolveReturnContext() {
         const requested = searchParams.get("returnTo") || document.referrer || "";
         const fallbackUrl = api.pageUrl("secondhand.jsp");
@@ -107,8 +118,8 @@
                 : `<button class="secondary-action danger-action" type="button" data-action="delete">删除商品</button>`;
         }
 
-        root.innerHTML = `
-            <div class="detail-media-column">
+        const imageHtml = renderImages(product.imageUrls);
+        const mediaContent = imageHtml || `
                 <div class="detail-media detail-media--book">
                     <span class="detail-media__label">${api.escapeHtml(category)}</span>
                     <span class="detail-media__emoji" aria-hidden="true">${categoryEmoji[product.category] || "✨"}</span>
@@ -116,7 +127,11 @@
                     <span class="detail-media__spark detail-media__spark--two" aria-hidden="true">✧</span>
                     <span class="detail-media__circle detail-media__circle--one" aria-hidden="true"></span>
                     <span class="detail-media__circle detail-media__circle--two" aria-hidden="true"></span>
-                </div>
+                </div>`;
+
+        root.innerHTML = `
+            <div class="detail-media-column">
+                ${mediaContent}
                 <div class="detail-note"><span class="detail-note__icon">☼</span><p><strong>校园友好交易</strong><br><span>建议在公共区域当面交接</span></p></div>
             </div>
             <article class="detail-panel">

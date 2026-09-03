@@ -50,6 +50,12 @@
                     <span>个人空间</span>
                 </a>
             </li>
+            <li>
+                <a class="nav-link nav-link--admin" href="profile-admin.jsp" data-admin-link style="display:none;">
+                    <span class="nav-icon" aria-hidden="true">⚙</span>
+                    <span>管理员面板</span>
+                </a>
+            </li>
         </ul>
     </nav>
 

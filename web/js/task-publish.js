@@ -108,8 +108,8 @@
                     imageUrls: imageUrls
                 }
             });
-            api.toast("任务已发布！", "success");
-            location.href = api.pageUrlWithReturn("task-detail.jsp?taskId=" + result.id);
+            api.toast("发布成功，等待管理员审核", "success");
+            location.href = api.pageUrl("profile-user.jsp?recordTab=published-tasks");
         } catch (error) {
             if (error.status !== 401) {
                 api.setFeedback(feedback, error.message || "发布失败，请稍后重试");

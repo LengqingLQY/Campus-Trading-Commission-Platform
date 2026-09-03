@@ -72,7 +72,7 @@ public class TaskDAO {
     }
 
     /**
-     * 发布任务：audit_status 固定 approved、status 固定 open。
+     * 发布任务：audit_status 固定 pending（待管理员审核）、status 固定 open。
      * 返回自增主键 id。
      */
     public int insert(Task task) {
@@ -80,7 +80,7 @@ public class TaskDAO {
         jdbc.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO task (publisher_id, title, description, pickup, delivery, deadline, amount, contact, image_urls, audit_status, status) "
-                  + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 'open')",
+                  + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'open')",
                     Statement.RETURN_GENERATED_KEYS);
             ps.setInt(1, task.getPublisherId());
             ps.setString(2, task.getTitle());
@@ -187,6 +187,51 @@ public class TaskDAO {
                 "SELECT COUNT(*) FROM task_order WHERE accepter_id = ? AND status <> 'cancelled'",
                 Long.class, accepterId);
         return count == null ? 0 : count;
+    }
+
+    // ============================ 管理员 ============================
+
+    /**
+     * 管理员任务列表：查原始 task 表（不过滤审核状态，但排除已软删除），
+     * 可按 auditStatus 与关键词过滤。auditStatus 传 null 表示不过滤。
+     */
+    public List<Task> findAdminList(String auditStatus, String keyword, int offset, int size) {
+        String p = likePattern(keyword);
+        String sql = "SELECT t.*, u.username AS publisherName "
+                + "FROM task t JOIN user u ON u.id = t.publisher_id "
+                + "WHERE t.is_deleted = 0 "
+                + "AND (? IS NULL OR t.audit_status = ?) "
+                + "AND (t.title LIKE ? ESCAPE '\\' OR t.description LIKE ? ESCAPE '\\') "
+                + "ORDER BY t.created_at DESC LIMIT ? OFFSET ?";
+        return jdbc.query(sql, new BeanPropertyRowMapper<>(Task.class),
+                auditStatus, auditStatus, p, p, size, offset);
+    }
+
+    public long countAdminList(String auditStatus, String keyword) {
+        String p = likePattern(keyword);
+        String sql = "SELECT COUNT(*) FROM task t "
+                + "WHERE t.is_deleted = 0 "
+                + "AND (? IS NULL OR t.audit_status = ?) "
+                + "AND (t.title LIKE ? ESCAPE '\\' OR t.description LIKE ? ESCAPE '\\')";
+        Long count = jdbc.queryForObject(sql, Long.class, auditStatus, auditStatus, p, p);
+        return count == null ? 0 : count;
+    }
+
+    /** 管理员审核：只改 audit_status 与 audit_remark，不动业务 status。返回受影响行数。 */
+    public int audit(int id, String auditStatus, String remark) {
+        return jdbc.update(
+                "UPDATE task SET audit_status=?, audit_remark=?, updated_at=datetime('now','localtime') "
+              + "WHERE id=? AND is_deleted=0",
+                auditStatus, remark, id);
+    }
+
+    /** 管理员软删除：不限发布者，直接置 is_deleted=1。返回受影响行数。 */
+    public int softDeleteByAdmin(int id, int adminId) {
+        return jdbc.update(
+                "UPDATE task SET is_deleted=1, deleted_by=?, "
+              + "deleted_at=datetime('now','localtime'), updated_at=datetime('now','localtime') "
+              + "WHERE id=? AND is_deleted=0",
+                adminId, id);
     }
 
     private static String likePattern(String keyword) {

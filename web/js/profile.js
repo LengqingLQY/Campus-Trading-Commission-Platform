@@ -21,6 +21,7 @@
         on_sale: "",
         sold: "done"
     };
+    var auditNames = { pending: "待审核", approved: "已通过", rejected: "已驳回" };
     var recordTabs = new Set(["published-tasks", "published-products", "accepted", "bought"]);
     var requestedTab = new URLSearchParams(location.search).get("recordTab");
     var currentTab = recordTabs.has(requestedTab) ? requestedTab : "published-tasks";
@@ -28,6 +29,33 @@
 
     function profileReturnPath(type) {
         return "profile-user.jsp?recordTab=" + encodeURIComponent(type) + "#profile-records";
+    }
+
+    // 发布记录信息区：approved 链详情并显示业务状态；pending/rejected 显示审核状态且不可点击（详情对未审核内容 404）。
+    function publishedInfo(item, type, kind) {
+        var detail = kind === "task" ? "task-detail.jsp?taskId=" + item.id : "product-detail.jsp?productId=" + item.id;
+        var amountText = kind === "task" ? "金额" : "价格";
+        var amountVal = kind === "task" ? item.amount : item.price;
+        var audit = item.auditStatus;
+        var approved = !audit || audit === "approved";
+
+        if (approved) {
+            var st = statusNames[item.status] || item.status;
+            var cls = statusClass[item.status] || "";
+            return '<a class="record-info" href="' + api.pageUrlWithReturn(detail, profileReturnPath(type)) + '" style="flex:1;text-decoration:none;color:inherit;">' +
+                '<span class="record-title">' + api.escapeHtml(item.title) + '</span>' +
+                '<span class="status-tag ' + cls + '">' + api.escapeHtml(st) + '</span>' +
+                '<p class="record-meta">' + amountText + '：' + api.money(amountVal) + ' 元</p>' +
+            '</a>';
+        }
+
+        var auditText = auditNames[audit] || "待审核";
+        var remark = (audit === "rejected" && item.auditRemark) ? ' · 驳回理由：' + api.escapeHtml(item.auditRemark) : '';
+        return '<div class="record-info" style="flex:1;">' +
+            '<span class="record-title">' + api.escapeHtml(item.title) + '</span>' +
+            '<span class="status-tag pending">' + api.escapeHtml(auditText) + '</span>' +
+            '<p class="record-meta">' + amountText + '：' + api.money(amountVal) + ' 元' + remark + '</p>' +
+        '</div>';
     }
 
     // ===== 加载用户资料 =====
@@ -277,19 +305,13 @@
         if (type === "published-tasks") {
             html = '<div class="record-section-label">📌 我发布的任务</div>';
             items.forEach(function(item) {
-                var st = statusNames[item.status] || item.status;
-                var cls = statusClass[item.status] || "";
                 var canDelete = item.status === "open" || item.status === "completed";
                 var deleteBtn = canDelete
                     ? '<button class="btn-sm btn-danger" data-delete-task="' + item.id + '" style="padding:2px 10px;font-size:11px;border:none;border-radius:6px;background:#ff4d4f;color:#fff;cursor:pointer;">删除</button>'
                     : '<span class="status-tag" style="background:#f5f5f5;color:#999;font-size:10px;">不可删除</span>';
                 html +=
                     '<div class="record-item" data-task-id="' + item.id + '">' +
-                        '<a class="record-info" href="' + api.pageUrlWithReturn("task-detail.jsp?taskId=" + item.id, profileReturnPath(type)) + '" style="flex:1;text-decoration:none;color:inherit;">' +
-                            '<span class="record-title">' + api.escapeHtml(item.title) + '</span>' +
-                            '<span class="status-tag ' + cls + '">' + api.escapeHtml(st) + '</span>' +
-                            '<p class="record-meta">金额：' + api.money(item.amount) + ' 元</p>' +
-                        '</a>' +
+                        publishedInfo(item, type, "task") +
                         '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">' +
                             '<span class="record-date">' + api.shortTime(item.createdAt) + '</span>' +
                             deleteBtn +
@@ -299,19 +321,13 @@
         } else if (type === "published-products") {
             html = '<div class="record-section-label">📌 我上架的商品</div>';
             items.forEach(function(item) {
-                var st = statusNames[item.status] || item.status;
-                var cls = statusClass[item.status] || "";
                 var canDelete = item.status === "on_sale" || item.status === "completed";
                 var deleteBtn = canDelete
                     ? '<button class="btn-sm btn-danger" data-delete-product="' + item.id + '" style="padding:2px 10px;font-size:11px;border:none;border-radius:6px;background:#ff4d4f;color:#fff;cursor:pointer;">删除</button>'
                     : '<span class="status-tag" style="background:#f5f5f5;color:#999;font-size:10px;">不可删除</span>';
                 html +=
                     '<div class="record-item" data-product-id="' + item.id + '">' +
-                        '<a class="record-info" href="' + api.pageUrlWithReturn("product-detail.jsp?productId=" + item.id, profileReturnPath(type)) + '" style="flex:1;text-decoration:none;color:inherit;">' +
-                            '<span class="record-title">' + api.escapeHtml(item.title) + '</span>' +
-                            '<span class="status-tag ' + cls + '">' + api.escapeHtml(st) + '</span>' +
-                            '<p class="record-meta">价格：' + api.money(item.price) + ' 元</p>' +
-                        '</a>' +
+                        publishedInfo(item, type, "product") +
                         '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">' +
                             '<span class="record-date">' + api.shortTime(item.createdAt) + '</span>' +
                             deleteBtn +

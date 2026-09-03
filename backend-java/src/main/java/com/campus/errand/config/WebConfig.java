@@ -1,5 +1,6 @@
 package com.campus.errand.config;
 
+import com.campus.errand.interceptor.AdminInterceptor;
 import com.campus.errand.interceptor.AuthInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -33,6 +34,10 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/register",
                         "/api/login",
                         "/api/public/**");
+
+        // 管理员接口：注册在 AuthInterceptor 之后，先登录校验（401）、再角色校验（403）。
+        registry.addInterceptor(new AdminInterceptor())
+                .addPathPatterns("/api/admin/**");
     }
 
     /**

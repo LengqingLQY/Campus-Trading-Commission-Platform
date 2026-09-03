@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/product.css">
+    <link rel="stylesheet" href="css/image-upload.css">
     <link rel="stylesheet" href="css/functional.css">
     <title>CTCP · 商品详情</title>
 </head>

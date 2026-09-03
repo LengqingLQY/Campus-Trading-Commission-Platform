@@ -65,7 +65,7 @@
 
                     <div class="publish-hint">
                         <span class="publish-hint__icon">✦</span>
-                        <p><strong>发布后即可展示</strong><br><span>当前普通用户版本不经过管理员审核，接口会将任务直接设为待接取。</span></p>
+                        <p><strong>发布后需管理员审核</strong><br><span>审核通过后任务才会进入任务大厅展示。</span></p>
                     </div>
 
                     <label class="publish-agreement" for="publish-agreement">

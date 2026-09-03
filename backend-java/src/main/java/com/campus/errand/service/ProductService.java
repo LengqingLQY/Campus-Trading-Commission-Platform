@@ -78,7 +78,7 @@ public class ProductService {
     }
 
     /**
-     * 发布商品。sellerId 从 session 取得，落库 audit_status='approved'、status='on_sale'。
+     * 发布商品。sellerId 从 session 取得，落库 audit_status='pending'、status='on_sale'，待管理员审核后公开。
      */
     public int createProduct(ProductCreateDTO dto, int sellerId) {
         if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
@@ -107,6 +107,8 @@ public class ProductService {
         product.setPrice(price == null ? 0.0 : price);
         product.setLocation(dto.getLocation() == null ? "" : dto.getLocation());
         product.setContact(dto.getContact() == null ? "" : dto.getContact());
+        String imageUrls = dto.getImageUrls();
+        product.setImageUrls(imageUrls == null || imageUrls.trim().isEmpty() ? null : imageUrls.trim());
         return productDAO.insert(product);
     }
 

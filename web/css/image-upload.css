@@ -95,3 +95,32 @@
     font-size: 10px;
     text-align: center;
 }
+
+/* ===== 详情页图片平铺 ===== */
+.detail-image-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.detail-image-item {
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+    background: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    box-shadow: 0 14px 30px rgba(47, 114, 112, 0.08);
+}
+
+.detail-image-item img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 单张图片时占满整列，比例放宽，避免只缩在左上角 */
+.detail-image-item:first-child:nth-last-child(1) {
+    grid-column: 1 / -1;
+    aspect-ratio: 4 / 3;
+}

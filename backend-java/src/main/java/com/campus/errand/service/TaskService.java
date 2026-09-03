@@ -77,7 +77,7 @@ public class TaskService {
     }
 
     /**
-     * 发布任务。publisherId 从 session 取得，落库 audit_status='approved'、status='open'。
+     * 发布任务。publisherId 从 session 取得，落库 audit_status='pending'、status='open'，待管理员审核后公开。
      */
     public int createTask(TaskCreateDTO dto, int publisherId) {
         if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {

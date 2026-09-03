@@ -100,4 +100,31 @@ public class UserDAO {
                 "UPDATE user SET password_hash=?, updated_at=datetime('now','localtime') WHERE id=?",
                 passwordHash, id);
     }
+
+    // ============================ 管理员 ============================
+
+    /** 管理员用户列表：账号/昵称模糊匹配。passwordHash 由 @JsonIgnore 保证不外泄。 */
+    public List<User> findAll(String keyword, int offset, int size) {
+        String p = likePattern(keyword);
+        String sql = "SELECT * FROM user "
+                + "WHERE account LIKE ? ESCAPE '\\' OR username LIKE ? ESCAPE '\\' "
+                + "ORDER BY id LIMIT ? OFFSET ?";
+        return jdbc.query(sql, new BeanPropertyRowMapper<>(User.class), p, p, size, offset);
+    }
+
+    public long countAll(String keyword) {
+        String p = likePattern(keyword);
+        String sql = "SELECT COUNT(*) FROM user "
+                + "WHERE account LIKE ? ESCAPE '\\' OR username LIKE ? ESCAPE '\\'";
+        Long count = jdbc.queryForObject(sql, Long.class, p, p);
+        return count == null ? 0 : count;
+    }
+
+    private static String likePattern(String keyword) {
+        if (keyword == null || keyword.isEmpty()) {
+            return "%";
+        }
+        String esc = keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return "%" + esc + "%";
+    }
 }
