@@ -44,11 +44,6 @@
     }
 
     const returnContext = resolveReturnContext();
-    const headerBackLink = document.querySelector("[data-detail-back]");
-    if (headerBackLink) {
-        headerBackLink.href = returnContext.url;
-        headerBackLink.textContent = `← ${returnContext.label}`;
-    }
 
     function canUseBrowserBack() {
         if (!document.referrer || history.length < 2) return false;

@@ -21,12 +21,6 @@
                 <span class="workspace__kicker">PROFILE · PERSONAL SPACE</span>
                 <h1>个人空间 <span class="profile-role user">普通用户</span></h1>
             </div>
-            <div class="workspace__actions">
-                <button class="profile-chip" type="button">
-                    <span class="avatar avatar--small" data-profile-avatar>A</span>
-                    <span data-profile-name>我的空间</span>
-                </button>
-            </div>
         </header>
 
         <section class="profile-content" data-profile-root>

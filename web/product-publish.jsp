@@ -18,7 +18,6 @@
     <main class="workspace product-page-workspace">
         <header class="workspace__topbar product-page-topbar">
             <div><span class="workspace__kicker">SECOND-HAND · LIST AN ITEM</span><h1>发布一件二手好物</h1></div>
-            <div class="workspace__actions"><a class="back-link" href="secondhand.jsp">← 返回商品列表</a></div>
         </header>
 
         <section class="publish-layout" aria-label="发布商品内容">

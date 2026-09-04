@@ -63,8 +63,6 @@
         try {
             userData = await api.requireUser();
             var initialLetter = api.initial(userData.username);
-            document.querySelector("[data-profile-avatar]").textContent = initialLetter;
-            document.querySelector("[data-profile-name]").textContent = userData.username + "的空间";
 
             var avatarContainer = document.querySelector("[data-profile-avatar-lg]");
             if (avatarContainer) {

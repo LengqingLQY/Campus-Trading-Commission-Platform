@@ -13,6 +13,19 @@
     };
     let recommendationPool = [];
 
+    function promoVisual(item, emoji, kind, badge) {
+        const imageUrl = api.firstImageUrl(item.imageUrls);
+        const content = imageUrl
+            ? `<img class="discovery-card__image" src="${api.escapeHtml(imageUrl)}" alt="${api.escapeHtml(item.title)}" loading="lazy" decoding="async">`
+            : `<span class="discovery-card__emoji" aria-hidden="true">${emoji}</span>`;
+        return `
+            <div class="discovery-card__visual${imageUrl ? " discovery-card__visual--has-image" : ""}">
+                <span class="discovery-card__kind">${api.escapeHtml(kind)}</span>
+                ${content}
+                <span class="discovery-card__badge">${api.escapeHtml(badge)}</span>
+            </div>`;
+    }
+
     function promoProduct(item, index) {
         const title = api.escapeHtml(item.title);
         const description = api.escapeHtml(item.description || "等待下一位同学发现的校园好物");
@@ -20,11 +33,7 @@
         const emoji = categoryEmoji[item.category] || "✨";
         return `
             <a class="discovery-card discovery-card--product tone-${index % 4}" href="${api.pageUrlWithReturn(`product-detail.jsp?productId=${item.id}`)}">
-                <div class="discovery-card__visual">
-                    <span class="discovery-card__kind">二手交易</span>
-                    <span class="discovery-card__emoji" aria-hidden="true">${emoji}</span>
-                    <span class="discovery-card__badge">${api.escapeHtml(category)}</span>
-                </div>
+                ${promoVisual(item, emoji, "二手交易", category)}
                 <div class="discovery-card__body">
                     <h3>${title}</h3>
                     <p>${description}</p>
@@ -41,11 +50,7 @@
         const description = api.escapeHtml(item.description || "一份正在等待同学响应的校园互助");
         return `
             <a class="discovery-card discovery-card--task tone-${index % 4}" href="${api.pageUrl(`task-detail.jsp?taskId=${item.id}`)}">
-                <div class="discovery-card__visual">
-                    <span class="discovery-card__kind">跑腿推广</span>
-                    <span class="discovery-card__emoji" aria-hidden="true">${index % 2 ? "🏃" : "📦"}</span>
-                    <span class="discovery-card__badge">待接取</span>
-                </div>
+                ${promoVisual(item, index % 2 ? "🏃" : "📦", "跑腿推广", "待接取")}
                 <div class="discovery-card__body">
                     <h3>${title}</h3>
                     <p>${description}</p>

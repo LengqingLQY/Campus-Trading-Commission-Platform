@@ -17,7 +17,6 @@
     <main class="workspace product-page-workspace order-workspace">
         <header class="workspace__topbar product-page-topbar">
             <div><span class="workspace__kicker">SECOND-HAND · TRADE FLOW</span><h1>交易进度</h1></div>
-            <div class="workspace__actions"><a class="back-link" href="main.jsp">← 返回发现首页</a></div>
         </header>
         <div class="order-detail-root" data-order-detail>
             <div class="loading-state"><span class="button-spinner"></span><p>正在读取交易记录...</p></div>

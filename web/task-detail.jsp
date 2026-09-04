@@ -19,7 +19,6 @@
         <header class="workspace__topbar product-page-topbar">
             <div><span class="workspace__kicker">ERRAND · TASK DETAIL</span><h1>任务详情</h1></div>
             <div class="workspace__actions">
-                <a class="back-link" href="task-hall.jsp" data-detail-back>← 返回任务列表</a>
                 <a class="profile-chip market-publish-button" href="task-publish.jsp"><span>＋</span><span>发布任务</span></a>
             </div>
         </header>

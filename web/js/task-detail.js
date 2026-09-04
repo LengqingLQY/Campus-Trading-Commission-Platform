@@ -53,11 +53,6 @@
     }
 
     var returnContext = resolveReturnContext();
-    var headerBackLink = document.querySelector("[data-detail-back]");
-    if (headerBackLink) {
-        headerBackLink.href = returnContext.url;
-        headerBackLink.textContent = "← " + returnContext.label;
-    }
 
     function returnLink() {
         return '<a class="secondary-action" data-detail-back href="' + api.escapeHtml(returnContext.url) + '">' + api.escapeHtml(returnContext.label) + '</a>';

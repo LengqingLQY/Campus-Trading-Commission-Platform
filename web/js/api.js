@@ -63,6 +63,12 @@
         return value ? `?${value}` : "";
     }
 
+    /** 列表使用第一张非空图片，与详情页的逗号分隔图片格式保持一致。 */
+    function firstImageUrl(imageUrls) {
+        if (typeof imageUrls !== "string") return "";
+        return imageUrls.split(",").map((url) => url.trim()).find(Boolean) || "";
+    }
+
     /** 始终以 web 根目录解析 JSP，避免外部脚本目录影响相对地址。 */
     function pageUrl(path) {
         return new URL(path, WEB_BASE).href;
@@ -244,6 +250,7 @@
         ApiError,
         request,
         query,
+        firstImageUrl,
         pageUrl,
         currentPagePath,
         pageUrlWithReturn,

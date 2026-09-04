@@ -18,7 +18,6 @@
     <main class="workspace product-page-workspace">
         <header class="workspace__topbar product-page-topbar">
             <div><span class="workspace__kicker">ERRAND · PUBLISH TASK</span><h1>发布跑腿任务</h1></div>
-            <div class="workspace__actions"><a class="back-link" href="task-hall.jsp">← 返回任务列表</a></div>
         </header>
 
         <section class="publish-layout" aria-label="发布任务内容">

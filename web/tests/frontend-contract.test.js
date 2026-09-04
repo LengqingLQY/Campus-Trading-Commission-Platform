@@ -56,7 +56,7 @@ assert.equal(domain.orderAction("buyer", "delivered"), "complete");
 assert.equal(domain.orderAction("buyer", "completed"), "completed");
 
 const webRoot = path.resolve(__dirname, "..");
-const pages = ["index.jsp", "register.jsp", "main.jsp", "secondhand.jsp", "product-detail.jsp", "product-publish.jsp", "product-order.jsp"];
+const pages = fs.readdirSync(webRoot).filter((name) => name.endsWith(".jsp"));
 for (const page of pages) {
     const html = fs.readFileSync(path.join(webRoot, page), "utf8");
     const ids = [...html.matchAll(/id="([^"]+)"/g)].map((match) => match[1]);
