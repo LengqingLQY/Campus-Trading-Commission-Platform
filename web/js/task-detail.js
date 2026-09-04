@@ -23,17 +23,8 @@
     var task = null;
     var currentUser = null;
     var terminationComposerOpen = false;
-
-    // ===== 图片渲染函数（平铺） =====
-    function renderImages(imageUrls) {
-        if (!imageUrls) return '';
-        var urls = imageUrls.split(',').filter(function(u) { return u && u.trim(); });
-        if (urls.length === 0) return '';
-        var items = urls.map(function(url) {
-            return '<div class="detail-image-item"><img src="' + api.escapeHtml(url.trim()) + '" alt="任务图片"></div>';
-        }).join('');
-        return '<div class="detail-image-grid">' + items + '</div>';
-    }
+    var gallery = null;
+    var comments = null;
 
     // ===== 来源返回 =====
     function resolveReturnContext() {
@@ -145,28 +136,17 @@
         var isParticipant = isOwner || isAccepter;
 
         var actionBtn = "", deleteBtn = "", terminationArea = "", terminationEntry = "", footNote = "";
-        var pending = pendingTermination();
-
-        // 图片
-        var imageHtml = renderImages(task.imageUrls);
-        var mediaContent = imageHtml
-            ? imageHtml
-            : '<div class="detail-media detail-media--task">' +
-                '<span class="detail-media__label">跑腿任务</span>' +
-                '<span class="detail-media__emoji">📦</span>' +
-                '<span class="detail-media__spark detail-media__spark--one">✦</span>' +
-                '<span class="detail-media__spark detail-media__spark--two">✧</span>' +
-                '<span class="detail-media__circle detail-media__circle--one"></span>' +
-                '<span class="detail-media__circle detail-media__circle--two"></span>' +
-              '</div>';
+        var pending = isParticipant ? pendingTermination() : null;
+        var editBtn = isOwner && task.status === "open"
+            ? '<a class="secondary-action detail-edit-action" href="' + api.escapeHtml(api.pageUrlWithReturn("task-publish.jsp?taskId=" + taskId)) + '">修改任务</a>' : "";
 
         if (isOwner && (task.status === "open" || task.status === "completed")) {
             deleteBtn = '<button class="secondary-action danger-action" type="button" data-action="delete-task">🗑️ 删除任务</button>';
         }
 
         if (pending) {
-            var isReq = pending.requesterId === currentUser.id;
-            var name = pending.requesterId === task.publisherId ? "发布者" : "接取者";
+            var isReq = Number(pending.requesterId) === Number(currentUser.id);
+            var name = Number(pending.requesterId) === Number(task.publisherId) ? "发布者" : "接取者";
             terminationArea =
                 '<section class="termination-request-banner termination-request-banner--' + (isReq ? "waiting" : "review") + '">' +
                     '<div class="termination-request-banner__head">' +
@@ -185,7 +165,7 @@
             footNote = "💡 待处理终止申请期间，送达和确认操作已暂停";
         } else if (task.status === "open" && currentUser && !isOwner) {
             actionBtn = '<button class="primary-action" data-action="accept">🤝 接取任务</button>';
-        } else if (task.status === "accepted" && currentUser && !isOwner) {
+        } else if (task.status === "accepted" && isAccepter) {
             actionBtn = '<button class="primary-action" style="background:#faad14;" data-action="deliver">🚚 标记送达</button>';
         } else if (task.status === "delivered" && currentUser && isOwner) {
             actionBtn = '<button class="primary-action" style="background:#52c41a;" data-action="complete">✅ 确认完成</button>';
@@ -226,12 +206,13 @@
 
         root.innerHTML =
             '<div class="detail-media-column">' +
-                mediaContent +
+                '<div data-detail-gallery></div>' +
                 '<div class="detail-note">' +
                     '<span class="detail-note__icon">☼</span>' +
                     '<p><strong>校园互助</strong><br><span>接取后请及时联系发布者</span></p>' +
                 '</div>' +
             '</div>' +
+            '<div class="detail-content-column" tabindex="0" role="region" aria-label="任务信息与评论，可滚动">' +
             '<article class="detail-panel">' +
                 '<div class="detail-status-row">' +
                     '<span class="detail-tag detail-tag--category">跑腿</span>' +
@@ -255,13 +236,22 @@
                 terminationArea +
                 '<div class="detail-actions">' +
                     actionBtn +
+                    editBtn +
                     deleteBtn +
                     returnLink() +
                 '</div>' +
                 terminationEntry +
                 composer +
                 (footNote ? '<p class="detail-footnote">' + footNote + '</p>' : "") +
-            '</article>';
+            '</article><section data-detail-comments></section></div>';
+
+        if (!gallery) gallery = new window.ListingGallery(root.querySelector("[data-detail-gallery]"), {
+            images: task.imageUrls, label: "任务图片", emptyIcon: "📦", emptyLabel: "校园跑腿"
+        });
+        else { root.querySelector("[data-detail-gallery]").replaceWith(gallery.element); gallery.setImages(task.imageUrls); }
+        // 保留评论节点，打开终止申请等详情重绘不会丢失评论草稿与页码。
+        if (!comments) comments = new window.ListingComments(root.querySelector("[data-detail-comments]"), {kind: "task", id: taskId, user: currentUser});
+        else root.querySelector("[data-detail-comments]").replaceWith(comments.element);
 
         // 事件绑定
         ["accept", "deliver", "complete"].forEach(function(action) {
@@ -315,6 +305,23 @@
         } catch (e) { api.toast(e.message || "操作失败", "error"); api.setLoading(btn, false); }
     }
 
+    // 现有公开详情可能没有 accepterId，使用当前用户已有的接取记录确认身份。
+    async function resolveAccepter() {
+        if (!currentUser || Number(currentUser.id) === Number(task.publisherId) || task.accepterId
+            || (task.status !== "accepted" && task.status !== "delivered")) return;
+        var page = 1;
+        while (true) {
+            var result = await api.request("/me/tasks" + api.query({type: "accepted", page: page, size: 50}));
+            var list = result.list || [];
+            if (list.some(function(item) { return Number(item.id) === taskId && item.orderStatus !== "cancelled"; })) {
+                task.accepterId = currentUser.id;
+                return;
+            }
+            if (list.length < 50 || page * 50 >= Number(result.total || 0)) return;
+            page += 1;
+        }
+    }
+
     async function load() {
         if (!Number.isInteger(taskId) || taskId < 1) {
             root.innerHTML = '<div class="empty-state"><h3>任务编号无效</h3>' + returnLink() + '</div>';
@@ -327,6 +334,7 @@
             ]);
             task = results[0];
             currentUser = results[1];
+            await resolveAccepter().catch(function() { api.toast("接取记录暂时无法读取，请刷新后重试", "error"); });
             render();
         } catch (e) {
             root.innerHTML = '<div class="empty-state empty-state--error"><span>!</span><h3>加载失败</h3><p>' + api.escapeHtml(e.message) + '</p>' + returnLink() + '</div>';
