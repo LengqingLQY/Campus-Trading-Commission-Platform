@@ -81,22 +81,10 @@ public class ProductService {
      * 发布商品。sellerId 从 session 取得，落库 audit_status='pending'、status='on_sale'，待管理员审核后公开。
      */
     public int createProduct(ProductCreateDTO dto, int sellerId) {
-        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
-            throw new BizException(400, "标题不能为空");
-        }
-
+        validateProductDto(dto);
         String category = dto.getCategory() == null ? "other" : dto.getCategory();
-        if (!CATEGORIES.contains(category)) {
-            throw new BizException(400, "分类不合法");
-        }
         String condition = dto.getCondition() == null ? "good" : dto.getCondition();
-        if (!CONDITIONS.contains(condition)) {
-            throw new BizException(400, "成色不合法");
-        }
         Double price = dto.getPrice();
-        if (price != null && price < 0) {
-            throw new BizException(400, "价格不能为负数");
-        }
 
         Product product = new Product();
         product.setSellerId(sellerId);
@@ -139,6 +127,52 @@ public class ProductService {
             }
             throw new BizException(409, "交易进行中的商品不能删除");
         }
+    }
+
+    /**
+     * 读取本人原稿（增量契约：商品与跑腿详情评论及修改 §4.1）。
+     * 仅本人、未删除、状态 on_sale 且无未取消购买订单时可读，返回含审核字段的原始记录。
+     */
+    public Product getProductForEdit(int productId, int currentUserId) {
+        return requireEditableProduct(productId, currentUserId);
+    }
+
+    /**
+     * 保存修改（增量契约 §4.2）：校验字段 → 校验本人/状态/无进行中订单 →
+     * 带条件 UPDATE 重新进入待审核。保存失败保留输入，不新建记录。
+     */
+    @Transactional
+    public Map<String, Object> updateProduct(int productId, ProductCreateDTO dto, int currentUserId) {
+        validateProductDto(dto);
+        String title = dto.getTitle().trim();
+        if (title.isEmpty() || title.length() > 80) {
+            throw new BizException(400, "标题需为 1～80 字");
+        }
+
+        Product product = requireEditableProduct(productId, currentUserId);
+        product.setTitle(title);
+        product.setDescription(dto.getDescription() == null ? "" : dto.getDescription());
+        product.setCategory(dto.getCategory() == null ? "other" : dto.getCategory());
+        product.setCondition(dto.getCondition() == null ? "good" : dto.getCondition());
+        product.setPrice(dto.getPrice() == null ? 0.0 : dto.getPrice());
+        product.setLocation(dto.getLocation() == null ? "" : dto.getLocation());
+        product.setContact(dto.getContact() == null ? "" : dto.getContact());
+        String imageUrls = dto.getImageUrls();
+        product.setImageUrls(imageUrls == null || imageUrls.trim().isEmpty() ? null : imageUrls.trim());
+
+        int rows = productDAO.update(product);
+        if (rows == 0) {
+            // 并发下状态可能已变化，重新读取返回精确错误码，不误报成功
+            Product now = productDAO.findById(productId);
+            if (now == null || (now.getIsDeleted() != null && now.getIsDeleted() == 1)) {
+                throw new BizException(404, "商品不存在");
+            }
+            if (now.getSellerId() != null && now.getSellerId() != currentUserId) {
+                throw new BizException(403, "只能修改自己发布的商品");
+            }
+            throw new BizException(409, "商品状态已变化，请刷新后重试");
+        }
+        return Map.of("id", productId, "status", "on_sale", "auditStatus", "pending");
     }
 
     /**
@@ -337,6 +371,43 @@ public class ProductService {
     /** 由 requesterRole 反推发起方用户 id，用于撤回/同意/拒绝的权限判断。 */
     private int requesterIdOf(ProductOrder order, TerminationRequest request) {
         return "buyer".equals(request.getRequesterRole()) ? order.getBuyerId() : order.getSellerId();
+    }
+
+    /** 发布/修改共用的字段校验：标题非空、分类/成色枚举、价格非负。 */
+    private void validateProductDto(ProductCreateDTO dto) {
+        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+            throw new BizException(400, "标题不能为空");
+        }
+        String category = dto.getCategory() == null ? "other" : dto.getCategory();
+        if (!CATEGORIES.contains(category)) {
+            throw new BizException(400, "分类不合法");
+        }
+        String condition = dto.getCondition() == null ? "good" : dto.getCondition();
+        if (!CONDITIONS.contains(condition)) {
+            throw new BizException(400, "成色不合法");
+        }
+        Double price = dto.getPrice();
+        if (price != null && price < 0) {
+            throw new BizException(400, "价格不能为负数");
+        }
+    }
+
+    /** 编辑/修改共用的归属与状态校验，通过则返回原记录。 */
+    private Product requireEditableProduct(int productId, int currentUserId) {
+        Product product = productDAO.findById(productId);
+        if (product == null || (product.getIsDeleted() != null && product.getIsDeleted() == 1)) {
+            throw new BizException(404, "商品不存在");
+        }
+        if (product.getSellerId() == null || product.getSellerId() != currentUserId) {
+            throw new BizException(403, "只能修改自己发布的商品");
+        }
+        if (!"on_sale".equals(product.getStatus())) {
+            throw new BizException(409, "当前状态不允许修改");
+        }
+        if (productOrderDAO.findByProductId(productId) != null) {
+            throw new BizException(409, "商品存在进行中的订单，不能修改");
+        }
+        return product;
     }
 
     /**

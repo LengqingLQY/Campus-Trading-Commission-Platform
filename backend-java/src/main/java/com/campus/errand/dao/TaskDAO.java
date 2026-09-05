@@ -138,6 +138,22 @@ public class TaskDAO {
     }
 
     /**
+     * 发布者保存修改：整行更新并重新进入待审核（audit_status='pending'），清理旧审核意见。
+     * WHERE 带身份 + 状态 + 软删除条件，返回受影响行数（0 = 非本人 / 已删除 / 非 open，
+     * 由 Service 二次读取返回精确错误码）。
+     */
+    public int update(Task task) {
+        return jdbc.update(
+                "UPDATE task SET title=?, description=?, pickup=?, delivery=?, deadline=?, amount=?, "
+              + "contact=?, image_urls=?, audit_status='pending', audit_remark=NULL, "
+              + "updated_at=datetime('now','localtime') "
+              + "WHERE id=? AND publisher_id=? AND is_deleted=0 AND status='open'",
+                task.getTitle(), task.getDescription(), task.getPickup(), task.getDelivery(),
+                task.getDeadline(), task.getAmount(), task.getContact(), task.getImageUrls(),
+                task.getId(), task.getPublisherId());
+    }
+
+    /**
      * 发布者软删除：仅在本人、未删除、且状态为 open/completed 时置 is_deleted=1。
      * 返回受影响行数（0 = 非本人 / 已删除 / 进行中，由 Service 二次判断返回精确错误码）。
      */
