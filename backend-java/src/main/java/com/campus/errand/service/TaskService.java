@@ -395,7 +395,7 @@ public class TaskService {
         }
     }
 
-    /** 发布/修改共用的字段校验：标题/取件/送达非空、金额非负、截止时间格式合法。 */
+    /** 发布/修改共用的字段校验：标题/取件/送达非空、金额有限且非负、截止时间格式合法。 */
     private void validateTaskDto(TaskCreateDTO dto) {
         if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
             throw new BizException(400, "标题不能为空");
@@ -407,6 +407,9 @@ public class TaskService {
             throw new BizException(400, "送达地点不能为空");
         }
         Double amount = dto.getAmount();
+        if (amount != null && !Double.isFinite(amount)) {
+            throw new BizException(400, "金额必须是有限数值");
+        }
         if (amount != null && amount < 0) {
             throw new BizException(400, "金额不能为负数");
         }
@@ -428,7 +431,8 @@ public class TaskService {
         if (!"open".equals(task.getStatus())) {
             throw new BizException(409, "当前状态不允许修改");
         }
-        if (taskOrderDAO.findByTaskId(taskId) != null) {
+        TaskOrder order = taskOrderDAO.findByTaskId(taskId);
+        if (order != null && !"cancelled".equals(order.getStatus())) {
             throw new BizException(409, "任务存在进行中的接单，不能修改");
         }
         return task;

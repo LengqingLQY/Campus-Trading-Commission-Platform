@@ -373,7 +373,7 @@ public class ProductService {
         return "buyer".equals(request.getRequesterRole()) ? order.getBuyerId() : order.getSellerId();
     }
 
-    /** 发布/修改共用的字段校验：标题非空、分类/成色枚举、价格非负。 */
+    /** 发布/修改共用的字段校验：标题非空、分类/成色枚举、价格有限且非负。 */
     private void validateProductDto(ProductCreateDTO dto) {
         if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
             throw new BizException(400, "标题不能为空");
@@ -387,6 +387,9 @@ public class ProductService {
             throw new BizException(400, "成色不合法");
         }
         Double price = dto.getPrice();
+        if (price != null && !Double.isFinite(price)) {
+            throw new BizException(400, "价格必须是有限数值");
+        }
         if (price != null && price < 0) {
             throw new BizException(400, "价格不能为负数");
         }
