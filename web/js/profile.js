@@ -148,13 +148,17 @@
     function initAvatarUpload() {
         var avatarContainer = document.querySelector("[data-profile-avatar-lg]");
         var fileInput = document.querySelector("#avatarInput");
+        var uploadBtn = document.querySelector("[data-action='upload-avatar']");
+        var resetBtn = document.querySelector("[data-action='reset-avatar']");
         if (!avatarContainer || !fileInput) return;
 
-        // 点击头像触发上传（但点击「恢复默认」时不上传）
-        avatarContainer.addEventListener("click", function(e) {
-            if (e.target.closest("[data-action='reset-avatar']")) return;
-            fileInput.click();
-        });
+        // 点击「更换头像」按钮触发文件选择
+        if (uploadBtn) {
+            uploadBtn.addEventListener("click", function(e) {
+                e.stopPropagation();
+                fileInput.click();
+            });
+        }
 
         fileInput.addEventListener("change", function() {
             var file = this.files[0];
@@ -167,14 +171,12 @@
 
             var reader = new FileReader();
             reader.onload = function(e) {
-                // 先本地预览
                 avatarContainer.style.backgroundImage = "url(" + e.target.result + ")";
                 avatarContainer.style.backgroundSize = "cover";
                 avatarContainer.style.backgroundPosition = "center";
                 var letterEl = avatarContainer.querySelector("[data-avatar-letter]");
                 if (letterEl) letterEl.style.display = "none";
 
-                // 真实头像上传接口
                 var fd = new FormData();
                 fd.append("avatar", file);
                 fetch("http://localhost:8081/api/users/me/avatar", {
@@ -201,13 +203,11 @@
         });
 
         // ===== 恢复默认头像 =====
-        var resetBtn = avatarContainer.querySelector("[data-action='reset-avatar']");
         if (resetBtn) {
             resetBtn.addEventListener("click", function(e) {
                 e.stopPropagation();
                 if (!confirm("确认恢复默认头像吗？")) return;
 
-                // 清除背景图，显示字母
                 avatarContainer.style.backgroundImage = "";
                 var letterEl = avatarContainer.querySelector("[data-avatar-letter]");
                 if (letterEl) {
@@ -215,7 +215,6 @@
                     letterEl.textContent = api.initial(userData ? userData.username : "同");
                 }
 
-                // 调用后端清空 avatarUrl
                 api.request("/users/me", {
                     method: "PUT",
                     body: { avatarUrl: "" }
@@ -294,14 +293,13 @@
                 "accepted": "你还没有接取任何任务",
                 "bought": "你还没有购买任何商品"
             };
-            list.innerHTML = '<div class="empty-state"><span>📭</span><h3>' + (labels[type] || "暂无记录") + '</h3></div>';
+            list.innerHTML = '<div class="empty-state"><h3>' + (labels[type] || "暂无记录") + '</h3></div>';
             return;
         }
 
         var html = "";
 
         if (type === "published-tasks") {
-            html = '<div class="record-section-label">📌 我发布的任务</div>';
             items.forEach(function(item) {
                 var canDelete = item.status === "open" || item.status === "completed";
                 var deleteBtn = canDelete
@@ -317,7 +315,6 @@
                     '</div>';
             });
         } else if (type === "published-products") {
-            html = '<div class="record-section-label">📌 我上架的商品</div>';
             items.forEach(function(item) {
                 var canDelete = item.status === "on_sale" || item.status === "completed";
                 var deleteBtn = canDelete
@@ -333,7 +330,6 @@
                     '</div>';
             });
         } else if (type === "accepted") {
-            html = '<div class="record-section-label">📌 我接取的任务</div>';
             items.forEach(function(item) {
                 var st = statusNames[item.status] || item.status;
                 var cls = statusClass[item.status] || "";
@@ -348,7 +344,6 @@
                     '</a>';
             });
         } else if (type === "bought") {
-            html = '<div class="record-section-label">📌 我购买的商品</div>';
             items.forEach(function(item) {
                 var st = statusNames[item.status] || item.status;
                 var cls = statusClass[item.status] || "";
@@ -364,7 +359,7 @@
             });
         }
 
-        list.innerHTML = html || '<div class="empty-state"><span>📭</span><h3>暂无记录</h3></div>';
+        list.innerHTML = html || '<div class="empty-state"><h3>暂无记录</h3></div>';
         bindDeleteEvents();
     }
 
