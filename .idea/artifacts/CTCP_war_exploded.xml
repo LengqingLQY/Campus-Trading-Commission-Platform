@@ -3,11 +3,27 @@
     <output-path>$PROJECT_DIR$/out/artifacts/CTCP_war_exploded</output-path>
     <root id="root">
       <element id="directory" name="WEB-INF">
-        <element id="directory" name="classes">
-          <element id="module-output" name="CTCP" />
-        </element>
+        <element id="dir-copy" path="$PROJECT_DIR$/web/WEB-INF" />
       </element>
-      <element id="javaee-facet-resources" facet="CTCP/web/Web" />
+      <element id="directory" name="css">
+        <element id="dir-copy" path="$PROJECT_DIR$/web/css" />
+      </element>
+      <element id="directory" name="js">
+        <element id="dir-copy" path="$PROJECT_DIR$/web/js" />
+      </element>
+      <element id="file-copy" path="$PROJECT_DIR$/web/index.jsp" />
+      <element id="file-copy" path="$PROJECT_DIR$/web/main.jsp" />
+      <element id="file-copy" path="$PROJECT_DIR$/web/product-detail.jsp" />
+      <element id="file-copy" path="$PROJECT_DIR$/web/product-order.jsp" />
+      <element id="file-copy" path="$PROJECT_DIR$/web/product-publish.jsp" />
+      <element id="file-copy" path="$PROJECT_DIR$/web/profile-admin.jsp" />
+      <element id="file-copy" path="$PROJECT_DIR$/web/profile-user.jsp" />
+      <element id="file-copy" path="$PROJECT_DIR$/web/register.jsp" />
+      <element id="file-copy" path="$PROJECT_DIR$/web/secondhand.jsp" />
+      <element id="file-copy" path="$PROJECT_DIR$/web/sidebar.jsp" />
+      <element id="file-copy" path="$PROJECT_DIR$/web/task-detail.jsp" />
+      <element id="file-copy" path="$PROJECT_DIR$/web/task-hall.jsp" />
+      <element id="file-copy" path="$PROJECT_DIR$/web/task-publish.jsp" />
     </root>
   </artifact>
 </component>

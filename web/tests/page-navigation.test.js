@@ -35,7 +35,7 @@ assert.doesNotMatch(profileHtml, /data-profile-name|data-profile-avatar[\s>]/, "
 assert.match(profileHtml, /data-profile-avatar-lg/, "个人资料中的头像应保留");
 assert.match(profileHtml, /data-profile-username/, "个人资料中的用户名应保留");
 
-async function verifyProfileLoad() {
+async function verifyProfileLoad(search = "") {
     // 仅为 JSP 中实际存在的 data-* 节点提供桩；已删除的顶部节点必须返回 null。
     const elements = new Map();
     for (const [attribute] of profileHtml.matchAll(/\bdata-[\w-]+/g)) {
@@ -46,6 +46,20 @@ async function verifyProfileLoad() {
             querySelectorAll() { return []; }
         });
     }
+    const tabs = [...profileHtml.matchAll(/class="([^"]+)"[^>]*data-record-tab="([^"]+)"/g)].map(([, classes, type]) => {
+        const activeClasses = new Set(classes.split(/\s+/));
+        return {
+            dataset: {recordTab: type},
+            classList: {
+                toggle(name, enabled) { enabled ? activeClasses.add(name) : activeClasses.delete(name); },
+                add(name) { activeClasses.add(name); },
+                remove(name) { activeClasses.delete(name); },
+                contains(name) { return activeClasses.has(name); }
+            },
+            addEventListener(event, handler) { this[event] = handler; }
+        };
+    });
+    const pageLocation = {search, href: "http://ctcp.test/profile-user.jsp" + search};
     const user = {username: "测试同学", qq: "10001", wechat: "test-wechat", phone: ""};
     const toasts = [];
     const api = {
@@ -58,12 +72,14 @@ async function verifyProfileLoad() {
     };
     const context = vm.createContext({
         window: {CTCP: api},
-        location: {search: ""},
+        location: pageLocation,
+        history: {replaceState(state, title, url) { pageLocation.href = String(url); }},
+        URL,
         URLSearchParams,
         document: {
             readyState: "complete",
             querySelector: (selector) => elements.get(selector) || null,
-            querySelectorAll: () => []
+            querySelectorAll: (selector) => selector === "[data-record-tab]" ? tabs : []
         }
     });
     vm.runInContext(read("js/profile.js"), context, {filename: "profile.js"});
@@ -74,11 +90,22 @@ async function verifyProfileLoad() {
     assert.equal(elements.get("[data-profile-username]").textContent, user.username);
     assert.equal(elements.get("[data-profile-input-username]").value, user.username);
     assert.equal(elements.get("[data-avatar-letter]").textContent, "测");
-    assert.equal(elements.get("[data-profile-qq]").textContent, user.qq);
-    assert.match(elements.get("[data-record-list]").innerHTML, /你还没有发布过任何任务/, "个人记录也应正常完成加载");
+    for (const field of ["qq", "wechat", "phone"]) {
+        assert.equal(elements.get(`[data-profile-input-${field}]`).value, user[field]);
+    }
+    const initialTab = new URLSearchParams(search).get("recordTab") || "published-tasks";
+    const selectedTabs = () => tabs.filter((tab) => tab.classList.contains("profile-tab--active")).map((tab) => tab.dataset.recordTab);
+    assert.deepEqual(selectedTabs(), [initialTab], "初次进入及来源返回时应仅高亮当前记录标签");
+    assert.match(elements.get("[data-record-list]").innerHTML, /你还没有/, "个人记录应完成加载");
+    for (const tab of tabs) {
+        tab.click();
+        await new Promise(setImmediate);
+        assert.deepEqual(selectedTabs(), [tab.dataset.recordTab], "点击后应仅高亮当前标签");
+        assert.equal(new URL(pageLocation.href).searchParams.get("recordTab"), tab.dataset.recordTab);
+    }
 }
 
-verifyProfileLoad().then(() => {
+Promise.all([verifyProfileLoad(), verifyProfileLoad("?recordTab=bought")]).then(() => {
     console.log("页面导航测试通过：5 个页面无重复顶部返回、内容区入口保留、个人空间正常加载");
 }).catch((error) => {
     console.error(error);

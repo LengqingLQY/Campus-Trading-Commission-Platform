@@ -83,9 +83,6 @@
             }
 
             document.querySelector("[data-profile-username]").textContent = userData.username;
-            document.querySelector("[data-profile-qq]").textContent = userData.qq || "—";
-            document.querySelector("[data-profile-wechat]").textContent = userData.wechat || "—";
-            document.querySelector("[data-profile-phone]").textContent = userData.phone || "—";
             document.querySelector("[data-profile-input-username]").value = userData.username || "";
             document.querySelector("[data-profile-input-qq]").value = userData.qq || "";
             document.querySelector("[data-profile-input-wechat]").value = userData.wechat || "";
@@ -386,10 +383,10 @@
     // ===== Tab 切换 =====
     function initTabs() {
         document.querySelectorAll("[data-record-tab]").forEach(function(button) {
-            button.classList.toggle("sort-pill--active", button.dataset.recordTab === currentTab);
+            button.classList.toggle("profile-tab--active", button.dataset.recordTab === currentTab);
             button.addEventListener("click", function() {
-                document.querySelectorAll("[data-record-tab]").forEach(function(b) { b.classList.remove("sort-pill--active"); });
-                this.classList.add("sort-pill--active");
+                document.querySelectorAll("[data-record-tab]").forEach(function(b) { b.classList.remove("profile-tab--active"); });
+                this.classList.add("profile-tab--active");
                 currentTab = this.dataset.recordTab;
                 var nextUrl = new URL(location.href);
                 nextUrl.searchParams.set("recordTab", currentTab);
