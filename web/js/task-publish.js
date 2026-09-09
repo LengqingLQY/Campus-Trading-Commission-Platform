@@ -35,6 +35,7 @@
         if (!title || title.length > 80) { api.setFeedback(feedback, "请填写 1～80 字的任务标题"); form.querySelector("[name='title']").focus(); return; }
         if (!pickup || !delivery) { api.setFeedback(feedback, "请填写取件地点和送达地点"); form.querySelector(!pickup ? "[name='pickup']" : "[name='delivery']").focus(); return; }
         if (!Number.isFinite(amount) || amount < 0 || form.elements.amount.validity.badInput) { api.setFeedback(feedback, "跑腿金额必须是非负数字"); return; }
+        if (amount > 100000) { api.setFeedback(feedback, "跑腿金额不能超过 100,000 元"); form.querySelector("[name='amount']").focus(); return; }
         if (!data.get("agreement")) { api.setFeedback(feedback, "请确认发布内容真实有效"); return; }
         let deadline = String(data.get("deadline") || "").trim();
         if (deadline) { deadline = deadline.replace("T", " "); if (deadline.length === 16) deadline += ":00"; }

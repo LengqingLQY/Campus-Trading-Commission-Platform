@@ -75,6 +75,7 @@
             : promoTask(entry.data, index)).join("");
     }
 
+    // ===== 交易待办项 =====
     function todoItem(item, role, needsAction, statusText) {
         const counterpart = role === "buyer"
             ? `卖家：${item.sellerName || "待联系"}`
@@ -91,21 +92,83 @@
             </a>`;
     }
 
-    function renderTodos(published, bought) {
+    // ===== 跑腿待办项 =====
+    function taskTodoItem(task, role, needsAction, statusText) {
+        const counterpart = role === "publisher"
+            ? `接取者：${task.accepterName || "待确认"}`
+            : `发布者：${task.publisherName || "待确认"}`;
+        const icon = role === "publisher" ? "📦" : "🏃";
+        return `
+            <a class="todo-item${needsAction ? " todo-item--active" : ""}"
+               href="${api.pageUrlWithReturn(`task-detail.jsp?taskId=${task.id}`)}">
+                <span class="todo-item__icon" aria-hidden="true">${icon}</span>
+                <span class="todo-item__content">
+                    <strong>${api.escapeHtml(task.title)}</strong>
+                    <small>${api.escapeHtml(counterpart)} · ￥${api.money(task.amount)}</small>
+                </span>
+                <span class="todo-item__status">${statusText}</span>
+            </a>`;
+    }
+
+    // ===== 构建跑腿待办 =====
+    function buildTaskTodos(publishedTasks, acceptedTasks) {
+        const todos = [];
+        // 我发布的任务：accepted → 等待送达，delivered → 待确认
+        (publishedTasks || []).forEach(task => {
+            if (task.status === "accepted") {
+                todos.push({ kind: "task", role: "publisher", task: task, statusText: "等待送达", needsAction: false });
+            } else if (task.status === "delivered") {
+                todos.push({ kind: "task", role: "publisher", task: task, statusText: "待确认", needsAction: true });
+            }
+        });
+        // 我接取的任务：accepted → 待送达，delivered → 已送达（等待发布者确认）
+        (acceptedTasks || []).forEach(task => {
+            if (task.status === "accepted") {
+                todos.push({ kind: "task", role: "accepter", task: task, statusText: "待送达", needsAction: true });
+            } else if (task.status === "delivered") {
+                todos.push({ kind: "task", role: "accepter", task: task, statusText: "已送达", needsAction: false });
+            }
+        });
+        return todos;
+    }
+
+    // ===== 渲染待办（交易 + 跑腿） =====
+    function renderTodos(published, bought, taskPublished, taskAccepted) {
         const root = document.querySelector("[data-todos]");
         const badge = document.querySelector("[data-todo-count]");
-        const all = domain.buildTradeTodos(published.list, bought.list);
-        if (badge) badge.textContent = String(all.length);
-        if (!all.length) {
+
+        // 1. 构建交易待办
+        const tradeTodos = domain.buildTradeTodos(published.list, bought.list);
+
+        // 2. 构建跑腿待办
+        const taskTodos = buildTaskTodos(taskPublished, taskAccepted);
+
+        // 3. 合并（跑腿待办放在交易待办后面）
+        const allTodos = [...tradeTodos, ...taskTodos];
+
+        if (badge) badge.textContent = String(allTodos.length);
+
+        if (!allTodos.length) {
             root.innerHTML = `
                 <div class="todo-empty">
                     <span aria-hidden="true">☀</span>
-                    <strong>目前没有进行中的交易</strong>
-                    <p>发现感兴趣的好物后，交易会出现在这里。</p>
+                    <strong>目前没有进行中的交易或跑腿</strong>
+                    <p>发布任务或发现好物后，待办会出现在这里。</p>
                 </div>`;
             return;
         }
-        root.innerHTML = all.map(({item, role, needsAction, statusText}) => todoItem(item, role, needsAction, statusText)).join("");
+
+        // 4. 分别渲染
+        let html = "";
+        // 交易待办
+        tradeTodos.forEach(({item, role, needsAction, statusText}) => {
+            html += todoItem(item, role, needsAction, statusText);
+        });
+        // 跑腿待办
+        taskTodos.forEach(({task, role, needsAction, statusText}) => {
+            html += taskTodoItem(task, role, needsAction, statusText);
+        });
+        root.innerHTML = html;
     }
 
     async function loadHome() {
@@ -120,7 +183,10 @@
                 api.request(`/public/products${api.query({sort: "time_desc", page: 1, size: 50})}`),
                 api.request(`/public/tasks${api.query({sort: "time_desc", page: 1, size: 50})}`),
                 api.request(`/me/products${api.query({type: "published", page: 1, size: 50})}`),
-                api.request(`/me/products${api.query({type: "bought", page: 1, size: 50})}`)
+                api.request(`/me/products${api.query({type: "bought", page: 1, size: 50})}`),
+                // 新增：跑腿待办数据
+                api.request(`/me/tasks${api.query({type: "published", page: 1, size: 50})}`).catch(() => ({ list: [] })),
+                api.request(`/me/tasks${api.query({type: "accepted", page: 1, size: 50})}`).catch(() => ({ list: [] }))
             ]);
 
             const products = results[0].status === "fulfilled" ? results[0].value.list || [] : [];
@@ -131,12 +197,14 @@
             ];
             renderRecommendations();
 
-            if (results[2].status === "fulfilled" && results[3].status === "fulfilled") {
-                renderTodos(results[2].value, results[3].value);
-            } else {
-                document.querySelector("[data-todos]").innerHTML = `
-                    <div class="todo-empty"><strong>待办暂时加载失败</strong><p>后端完成个人商品记录接口后即可显示。</p></div>`;
-            }
+            // 交易数据
+            const published = results[2].status === "fulfilled" ? results[2].value : { list: [] };
+            const bought = results[3].status === "fulfilled" ? results[3].value : { list: [] };
+            // 跑腿数据
+            const taskPublished = results[4].status === "fulfilled" ? results[4].value.list || [] : [];
+            const taskAccepted = results[5].status === "fulfilled" ? results[5].value.list || [] : [];
+
+            renderTodos(published, bought, taskPublished, taskAccepted);
 
             if (!recommendationPool.length && (results[0].status === "rejected" || results[1].status === "rejected")) {
                 feedback.textContent = "推荐内容暂时无法加载，请稍后刷新";

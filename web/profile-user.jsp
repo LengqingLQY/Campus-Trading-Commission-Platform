@@ -71,7 +71,9 @@
                             </div>
                             <div class="form-field">
                                 <label for="edit-phone">电话</label>
-                                <input type="text" id="edit-phone" name="phone" data-profile-input-phone>
+                                <input type="tel" id="edit-phone" name="phone" data-profile-input-phone
+                                       maxlength="11" inputmode="numeric" pattern="[0-9]*"
+                                       placeholder="请输入11位手机号">
                             </div>
                             <fieldset class="form-field form-field--full profile-password-fieldset">
                                 <legend>重置密码</legend>

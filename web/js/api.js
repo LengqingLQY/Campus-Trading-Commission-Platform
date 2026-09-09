@@ -32,7 +32,7 @@
         try {
             response = await fetch(`${API_BASE}${path}`, config);
         } catch (error) {
-            throw new ApiError("无法连接后端服务，请确认 8081 端口已启动", 0, null);
+            throw new ApiError("网络连接失败，请检查网络后刷新重试", 0, null);
         }
 
         const raw = await response.text();

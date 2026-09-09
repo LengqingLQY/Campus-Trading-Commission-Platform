@@ -49,6 +49,22 @@
         return '<a class="secondary-action" data-detail-back href="' + api.escapeHtml(returnContext.url) + '">' + api.escapeHtml(returnContext.label) + '</a>';
     }
 
+    // 将返回按钮渲染到右上角容器
+    function renderReturnButton() {
+        var container = document.querySelector("[data-detail-back-container]");
+        if (container) {
+            container.innerHTML = returnLink();
+        }
+    }
+
+    // ===== 隐藏「发布任务」按钮 =====
+    function hidePublishButton() {
+        var publishBtn = document.querySelector(".workspace__actions .market-publish-button");
+        if (publishBtn) {
+            publishBtn.style.display = "none";
+        }
+    }
+
     // ===== 待处理终止申请 =====
     function pendingTermination() {
         if (!task || (task.status !== "accepted" && task.status !== "delivered")) return null;
@@ -149,18 +165,18 @@
             var name = Number(pending.requesterId) === Number(task.publisherId) ? "发布者" : "接取者";
             terminationArea =
                 '<section class="termination-request-banner termination-request-banner--' + (isReq ? "waiting" : "review") + '">' +
-                    '<div class="termination-request-banner__head">' +
-                        '<span>' + (isReq ? "⌛" : "!") + '</span>' +
-                        '<div><strong>' + (isReq ? "终止申请已发出" : name + "申请终止") + '</strong>' +
-                        '<small>' + (isReq ? "等待对方处理" : "同意后任务将回到待接取") + '</small></div>' +
-                    '</div>' +
-                    '<p class="termination-request-reason"><span>申请理由</span>' + api.escapeHtml(pending.reason || "未填写") + '</p>' +
-                    '<div class="termination-request-actions">' +
-                        (isReq
-                            ? '<button class="secondary-action danger-action" data-termination-action="withdraw">撤回</button>'
-                            : '<button class="primary-action termination-approve" data-termination-action="approve">同意终止 ✓</button>' +
-                              '<button class="secondary-action" data-termination-action="reject">拒绝</button>') +
-                    '</div>' +
+                '<div class="termination-request-banner__head">' +
+                '<span>' + (isReq ? "⌛" : "!") + '</span>' +
+                '<div><strong>' + (isReq ? "终止申请已发出" : name + "申请终止") + '</strong>' +
+                '<small>' + (isReq ? "等待对方处理" : "同意后任务将回到待接取") + '</small></div>' +
+                '</div>' +
+                '<p class="termination-request-reason"><span>申请理由</span>' + api.escapeHtml(pending.reason || "未填写") + '</p>' +
+                '<div class="termination-request-actions">' +
+                (isReq
+                    ? '<button class="secondary-action danger-action" data-termination-action="withdraw">撤回</button>'
+                    : '<button class="primary-action termination-approve" data-termination-action="approve">同意终止 ✓</button>' +
+                    '<button class="secondary-action" data-termination-action="reject">拒绝</button>') +
+                '</div>' +
                 '</section>';
             footNote = "💡 待处理终止申请期间，送达和确认操作已暂停";
         } else if (task.status === "open" && currentUser && !isOwner) {
@@ -184,76 +200,76 @@
         if ((task.status === "accepted" || task.status === "delivered") && isParticipant && !pending) {
             terminationEntry =
                 '<div class="termination-entry">' +
-                    '<button class="secondary-action danger-action" data-termination-action="open">申请终止</button>' +
-                    '<p>提交申请后需对方同意才会生效。</p>' +
+                '<button class="secondary-action danger-action" data-termination-action="open">申请终止</button>' +
+                '<p>提交申请后需对方同意才会生效。</p>' +
                 '</div>';
         }
 
         var composer = terminationComposerOpen ?
             '<section class="termination-composer">' +
-                '<div class="termination-composer__heading">' +
-                    '<div><strong>申请终止</strong><small>需对方同意才会生效</small></div>' +
-                    '<button data-termination-action="close">×</button>' +
-                '</div>' +
-                '<label>终止原因 <span>2～200 字</span></label>' +
-                '<textarea data-termination-reason maxlength="200" placeholder="例如：时间无法协调"></textarea>' +
-                '<p class="form-feedback" data-termination-feedback></p>' +
-                '<div class="termination-composer__actions">' +
-                    '<button class="secondary-action" data-termination-action="close">取消</button>' +
-                    '<button class="primary-action" data-termination-action="submit">提交 →</button>' +
-                '</div>' +
+            '<div class="termination-composer__heading">' +
+            '<div><strong>申请终止</strong><small>需对方同意才会生效</small></div>' +
+            '<button data-termination-action="close">×</button>' +
+            '</div>' +
+            '<label>终止原因 <span>2～200 字</span></label>' +
+            '<textarea data-termination-reason maxlength="200" placeholder="例如：时间无法协调"></textarea>' +
+            '<p class="form-feedback" data-termination-feedback></p>' +
+            '<div class="termination-composer__actions">' +
+            '<button class="secondary-action" data-termination-action="close">取消</button>' +
+            '<button class="primary-action" data-termination-action="submit">提交 →</button>' +
+            '</div>' +
             '</section>' : "";
 
         root.innerHTML =
             '<div class="detail-media-column">' +
-                '<div data-detail-gallery></div>' +
-                '<div class="detail-note">' +
-                    '<span class="detail-note__icon">☼</span>' +
-                    '<p><strong>校园互助</strong><br><span>接取后请及时联系发布者</span></p>' +
-                '</div>' +
+            '<div data-detail-gallery></div>' +
+            '<div class="detail-note">' +
+            '<span class="detail-note__icon">☼</span>' +
+            '<p><strong>校园互助</strong><br><span>接取后请及时联系发布者</span></p>' +
+            '</div>' +
             '</div>' +
             '<div class="detail-content-column" tabindex="0" role="region" aria-label="任务信息与评论，可滚动">' +
             '<article class="detail-panel">' +
-                '<div class="detail-status-row">' +
-                    '<span class="detail-tag detail-tag--category">跑腿</span>' +
-                    '<span class="' + cls + '">● ' + statusText + '</span>' +
-                '</div>' +
-                '<h2>' + api.escapeHtml(task.title) + '</h2>' +
-                '<p class="detail-subtitle">发布者：' + api.escapeHtml(task.publisherName || "校园同学") + ' · ' + api.shortTime(task.createdAt) + '</p>' +
-                '<div class="detail-price"><small>￥</small><strong>' + api.money(task.amount) + '</strong><span>跑腿费 · 仅作信息记录</span></div>' +
-                '<div class="detail-divider"></div>' +
-                '<dl class="detail-facts">' +
-                    '<div><dt>📍 取件</dt><dd>' + api.escapeHtml(task.pickup || "待定") + '</dd></div>' +
-                    '<div><dt>📍 送达</dt><dd>' + api.escapeHtml(task.delivery || "待定") + '</dd></div>' +
-                    '<div><dt>⏰ 截止</dt><dd>' + (task.deadline ? api.shortTime(task.deadline) : "无") + '</dd></div>' +
-                    '<div><dt>💰 金额</dt><dd style="color:#f5222d;">' + api.money(task.amount) + ' 元</dd></div>' +
-                    '<div><dt>📞 联系方式</dt><dd>' + api.escapeHtml(task.contact || "未填写") + '</dd></div>' +
-                '</dl>' +
-                '<div class="detail-description">' +
-                    '<h3>📝 任务说明</h3>' +
-                    '<p>' + api.escapeHtml(task.description || "暂无") + '</p>' +
-                '</div>' +
-                terminationArea +
-                '<div class="detail-actions">' +
-                    actionBtn +
-                    editBtn +
-                    deleteBtn +
-                    returnLink() +
-                '</div>' +
-                terminationEntry +
-                composer +
-                (footNote ? '<p class="detail-footnote">' + footNote + '</p>' : "") +
+            '<div class="detail-status-row">' +
+            '<span class="detail-tag detail-tag--category">跑腿</span>' +
+            '<span class="' + cls + '">● ' + statusText + '</span>' +
+            '</div>' +
+            '<h2>' + api.escapeHtml(task.title) + '</h2>' +
+            '<p class="detail-subtitle">发布者：' + api.escapeHtml(task.publisherName || "校园同学") + ' · ' + api.shortTime(task.createdAt) + '</p>' +
+            '<div class="detail-price"><small>￥</small><strong>' + api.money(task.amount) + '</strong><span>跑腿费 · 仅作信息记录</span></div>' +
+            '<div class="detail-divider"></div>' +
+            '<dl class="detail-facts">' +
+            '<div><dt>📍 取件</dt><dd>' + api.escapeHtml(task.pickup || "待定") + '</dd></div>' +
+            '<div><dt>📍 送达</dt><dd>' + api.escapeHtml(task.delivery || "待定") + '</dd></div>' +
+            '<div><dt>⏰ 截止</dt><dd>' + (task.deadline ? api.shortTime(task.deadline) : "无") + '</dd></div>' +
+            '<div><dt>💰 金额</dt><dd style="color:#f5222d;">' + api.money(task.amount) + ' 元</dd></div>' +
+            '<div><dt>📞 联系方式</dt><dd>' + api.escapeHtml(task.contact || "未填写") + '</dd></div>' +
+            '</dl>' +
+            '<div class="detail-description">' +
+            '<h3>📝 任务说明</h3>' +
+            '<p>' + api.escapeHtml(task.description || "暂无") + '</p>' +
+            '</div>' +
+            terminationArea +
+            '<div class="detail-actions">' +
+            actionBtn +
+            editBtn +
+            deleteBtn +
+            '</div>' +
+            terminationEntry +
+            composer +
+            (footNote ? '<p class="detail-footnote">' + footNote + '</p>' : "") +
             '</article><section data-detail-comments></section></div>';
 
         if (!gallery) gallery = new window.ListingGallery(root.querySelector("[data-detail-gallery]"), {
             images: task.imageUrls, label: "任务图片", emptyIcon: "📦", emptyLabel: "校园跑腿"
         });
         else { root.querySelector("[data-detail-gallery]").replaceWith(gallery.element); gallery.setImages(task.imageUrls); }
-        // 保留评论节点，打开终止申请等详情重绘不会丢失评论草稿与页码。
         if (!comments) comments = new window.ListingComments(root.querySelector("[data-detail-comments]"), {kind: "task", id: taskId, user: currentUser});
         else root.querySelector("[data-detail-comments]").replaceWith(comments.element);
 
-        // 事件绑定
+        renderReturnButton();
+        hidePublishButton();
+
         ["accept", "deliver", "complete"].forEach(function(action) {
             var btn = root.querySelector("[data-action='" + action + "']");
             if (btn) {
@@ -305,7 +321,6 @@
         } catch (e) { api.toast(e.message || "操作失败", "error"); api.setLoading(btn, false); }
     }
 
-    // 现有公开详情可能没有 accepterId，使用当前用户已有的接取记录确认身份。
     async function resolveAccepter() {
         if (!currentUser || Number(currentUser.id) === Number(task.publisherId) || task.accepterId
             || (task.status !== "accepted" && task.status !== "delivered")) return;
@@ -324,7 +339,9 @@
 
     async function load() {
         if (!Number.isInteger(taskId) || taskId < 1) {
-            root.innerHTML = '<div class="empty-state"><h3>任务编号无效</h3>' + returnLink() + '</div>';
+            root.innerHTML = '<div class="empty-state"><h3>任务编号无效</h3></div>';
+            renderReturnButton();
+            hidePublishButton();
             return;
         }
         try {
@@ -337,7 +354,9 @@
             await resolveAccepter().catch(function() { api.toast("接取记录暂时无法读取，请刷新后重试", "error"); });
             render();
         } catch (e) {
-            root.innerHTML = '<div class="empty-state empty-state--error"><span>!</span><h3>加载失败</h3><p>' + api.escapeHtml(e.message) + '</p>' + returnLink() + '</div>';
+            root.innerHTML = '<div class="empty-state empty-state--error"><span>!</span><h3>加载失败</h3><p>' + api.escapeHtml(e.message) + '</p></div>';
+            renderReturnButton();
+            hidePublishButton();
         }
     }
 

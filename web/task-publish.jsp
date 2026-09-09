@@ -55,7 +55,7 @@
                             <label for="task-amount">跑腿金额 <span>元</span></label>
                             <div class="field-with-prefix">
                                 <span>￥</span>
-                                <input type="number" id="task-amount" name="amount" value="0" step="0.5" min="0">
+                                <input type="number" id="task-amount" name="amount" value="0" step="0.5" min="0" max="100000">
                             </div>
                         </div>
                         <div class="form-field form-field--full">

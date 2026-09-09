@@ -46,7 +46,7 @@
                 '<span class="record-title">' + api.escapeHtml(item.title) + '</span>' +
                 '<span class="status-tag ' + cls + '">' + api.escapeHtml(st) + '</span>' +
                 '<p class="record-meta">' + amountText + '：' + api.money(amountVal) + ' 元</p>' +
-            '</a>';
+                '</a>';
         }
 
         var auditText = auditNames[audit] || "待审核";
@@ -55,7 +55,24 @@
             '<span class="record-title">' + api.escapeHtml(item.title) + '</span>' +
             '<span class="status-tag pending">' + api.escapeHtml(auditText) + '</span>' +
             '<p class="record-meta">' + amountText + '：' + api.money(amountVal) + ' 元' + remark + '</p>' +
-        '</div>';
+            '</div>';
+    }
+
+    // ===== 同步侧边栏头像 =====
+    function syncSidebarAvatar(avatarUrl, username) {
+        var sidebarAvatar = document.querySelector("[data-user-avatar]");
+        if (!sidebarAvatar) return;
+        var name = username || (userData && userData.username) || "同学";
+        var initialLetter = api.initial(name);
+        if (avatarUrl) {
+            sidebarAvatar.style.backgroundImage = "url(" + api.escapeHtml(avatarUrl) + ")";
+            sidebarAvatar.style.backgroundSize = "cover";
+            sidebarAvatar.style.backgroundPosition = "center";
+            sidebarAvatar.textContent = "";
+        } else {
+            sidebarAvatar.style.backgroundImage = "";
+            sidebarAvatar.textContent = initialLetter;
+        }
     }
 
     // ===== 加载用户资料 =====
@@ -81,6 +98,9 @@
                     }
                 }
             }
+
+            // 同步侧边栏头像
+            syncSidebarAvatar(userData.avatarUrl, userData.username);
 
             document.querySelector("[data-profile-username]").textContent = userData.username;
             document.querySelector("[data-profile-input-username]").value = userData.username || "";
@@ -111,7 +131,14 @@
         var wechat = String(formData.get("wechat") || "").trim();
         if (wechat !== undefined) body.wechat = wechat;
         var phone = String(formData.get("phone") || "").trim();
-        if (phone !== undefined) body.phone = phone;
+        if (phone !== undefined) {
+            // 手机号校验：如果填写了，必须是 11 位数字
+            if (phone && !/^\d{11}$/.test(phone)) {
+                api.setFeedback(feedback, "电话必须为 11 位数字");
+                return;
+            }
+            body.phone = phone;
+        }
 
         var oldPassword = String(formData.get("oldPassword") || "").trim();
         var newPassword = String(formData.get("newPassword") || "").trim();
@@ -174,6 +201,10 @@
                 var letterEl = avatarContainer.querySelector("[data-avatar-letter]");
                 if (letterEl) letterEl.style.display = "none";
 
+                // 上传前先预览到侧边栏
+                var username = userData ? userData.username : "同学";
+                syncSidebarAvatar(e.target.result, username);
+
                 var fd = new FormData();
                 fd.append("avatar", file);
                 fetch("http://localhost:8081/api/users/me/avatar", {
@@ -181,20 +212,20 @@
                     body: fd,
                     credentials: "include"
                 })
-                .then(function(response) { return response.json(); })
-                .then(function(result) {
-                    if (result.code === 0) {
-                        api.toast("头像已更新", "success");
-                        api.resetCurrentUser();
+                    .then(function(response) { return response.json(); })
+                    .then(function(result) {
+                        if (result.code === 0) {
+                            api.toast("头像已更新", "success");
+                            api.resetCurrentUser();
+                            loadProfile();
+                        } else {
+                            throw new Error(result.msg || "上传失败");
+                        }
+                    })
+                    .catch(function(error) {
+                        alert("头像上传失败：" + error.message);
                         loadProfile();
-                    } else {
-                        throw new Error(result.msg || "上传失败");
-                    }
-                })
-                .catch(function(error) {
-                    alert("头像上传失败：" + error.message);
-                    loadProfile();
-                });
+                    });
             };
             reader.readAsDataURL(file);
         });
@@ -207,24 +238,28 @@
 
                 avatarContainer.style.backgroundImage = "";
                 var letterEl = avatarContainer.querySelector("[data-avatar-letter]");
+                var username = userData ? userData.username : "同学";
                 if (letterEl) {
                     letterEl.style.display = "";
-                    letterEl.textContent = api.initial(userData ? userData.username : "同");
+                    letterEl.textContent = api.initial(username);
                 }
+
+                // 同步侧边栏恢复默认
+                syncSidebarAvatar(null, username);
 
                 api.request("/users/me", {
                     method: "PUT",
                     body: { avatarUrl: "" }
                 })
-                .then(function() {
-                    api.toast("已恢复默认头像", "success");
-                    api.resetCurrentUser();
-                    loadProfile();
-                })
-                .catch(function(error) {
-                    api.toast("操作失败：" + error.message, "error");
-                    loadProfile();
-                });
+                    .then(function() {
+                        api.toast("已恢复默认头像", "success");
+                        api.resetCurrentUser();
+                        loadProfile();
+                    })
+                    .catch(function(error) {
+                        api.toast("操作失败：" + error.message, "error");
+                        loadProfile();
+                    });
             });
         }
     }
@@ -304,11 +339,11 @@
                     : '<span class="status-tag" style="background:#f5f5f5;color:#999;font-size:10px;">不可删除</span>';
                 html +=
                     '<div class="record-item" data-task-id="' + item.id + '">' +
-                        publishedInfo(item, type, "task") +
-                        '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">' +
-                            '<span class="record-date">' + api.shortTime(item.createdAt) + '</span>' +
-                            deleteBtn +
-                        '</div>' +
+                    publishedInfo(item, type, "task") +
+                    '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">' +
+                    '<span class="record-date">' + api.shortTime(item.createdAt) + '</span>' +
+                    deleteBtn +
+                    '</div>' +
                     '</div>';
             });
         } else if (type === "published-products") {
@@ -319,11 +354,11 @@
                     : '<span class="status-tag" style="background:#f5f5f5;color:#999;font-size:10px;">不可删除</span>';
                 html +=
                     '<div class="record-item" data-product-id="' + item.id + '">' +
-                        publishedInfo(item, type, "product") +
-                        '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">' +
-                            '<span class="record-date">' + api.shortTime(item.createdAt) + '</span>' +
-                            deleteBtn +
-                        '</div>' +
+                    publishedInfo(item, type, "product") +
+                    '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">' +
+                    '<span class="record-date">' + api.shortTime(item.createdAt) + '</span>' +
+                    deleteBtn +
+                    '</div>' +
                     '</div>';
             });
         } else if (type === "accepted") {
@@ -332,12 +367,12 @@
                 var cls = statusClass[item.status] || "";
                 html +=
                     '<a class="record-item" href="' + api.pageUrlWithReturn("task-detail.jsp?taskId=" + item.id, profileReturnPath(type)) + '">' +
-                        '<div class="record-info">' +
-                            '<span class="record-title">' + api.escapeHtml(item.title) + '</span>' +
-                            '<span class="status-tag ' + cls + '">' + api.escapeHtml(st) + '</span>' +
-                            '<p class="record-meta">发布者：' + api.escapeHtml(item.publisherName || "校园同学") + ' · 金额：' + api.money(item.amount) + ' 元</p>' +
-                        '</div>' +
-                        '<span class="record-date">' + api.shortTime(item.createdAt) + '</span>' +
+                    '<div class="record-info">' +
+                    '<span class="record-title">' + api.escapeHtml(item.title) + '</span>' +
+                    '<span class="status-tag ' + cls + '">' + api.escapeHtml(st) + '</span>' +
+                    '<p class="record-meta">发布者：' + api.escapeHtml(item.publisherName || "校园同学") + ' · 金额：' + api.money(item.amount) + ' 元</p>' +
+                    '</div>' +
+                    '<span class="record-date">' + api.shortTime(item.createdAt) + '</span>' +
                     '</a>';
             });
         } else if (type === "bought") {
@@ -346,12 +381,12 @@
                 var cls = statusClass[item.status] || "";
                 html +=
                     '<a class="record-item" href="' + api.pageUrlWithReturn("product-detail.jsp?productId=" + item.id, profileReturnPath(type)) + '">' +
-                        '<div class="record-info">' +
-                            '<span class="record-title">' + api.escapeHtml(item.title) + '</span>' +
-                            '<span class="status-tag ' + cls + '">' + api.escapeHtml(st) + '</span>' +
-                            '<p class="record-meta">卖家：' + api.escapeHtml(item.sellerName || "校园同学") + ' · 价格：' + api.money(item.price) + ' 元</p>' +
-                        '</div>' +
-                        '<span class="record-date">' + api.shortTime(item.createdAt) + '</span>' +
+                    '<div class="record-info">' +
+                    '<span class="record-title">' + api.escapeHtml(item.title) + '</span>' +
+                    '<span class="status-tag ' + cls + '">' + api.escapeHtml(st) + '</span>' +
+                    '<p class="record-meta">卖家：' + api.escapeHtml(item.sellerName || "校园同学") + ' · 价格：' + api.money(item.price) + ' 元</p>' +
+                    '</div>' +
+                    '<span class="record-date">' + api.shortTime(item.createdAt) + '</span>' +
                     '</a>';
             });
         }

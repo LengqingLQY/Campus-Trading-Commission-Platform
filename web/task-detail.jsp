@@ -18,8 +18,13 @@
 
     <main class="workspace product-page-workspace listing-detail-workspace">
         <header class="workspace__topbar product-page-topbar">
-            <div><span class="workspace__kicker">ERRAND · TASK DETAIL</span><h1>任务详情</h1></div>
+            <div>
+                <span class="workspace__kicker">ERRAND · TASK DETAIL</span>
+                <h1>任务详情</h1>
+            </div>
             <div class="workspace__actions">
+                <!-- 返回按钮容器（现在放在右上角操作区，位于发布任务按钮左侧） -->
+                <div data-detail-back-container></div>
                 <a class="profile-chip market-publish-button" href="task-publish.jsp"><span>＋</span><span>发布任务</span></a>
             </div>
         </header>
