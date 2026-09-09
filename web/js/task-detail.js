@@ -145,22 +145,38 @@
 
     // ===== 渲染 =====
     function render() {
-        var statusText = statusNames[task.status] || task.status;
-        var cls = statusClass[task.status] || "availability-badge";
+        var isRejected = task.auditStatus === "rejected";
+        var statusText = isRejected ? "已驳回" : (statusNames[task.status] || task.status);
+        var cls = isRejected ? "availability-badge ongoing" : (statusClass[task.status] || "availability-badge");
         var isOwner = currentUser && Number(currentUser.id) === Number(task.publisherId);
         var isAccepter = currentUser && task.accepterId && Number(currentUser.id) === Number(task.accepterId);
         var isParticipant = isOwner || isAccepter;
 
         var actionBtn = "", deleteBtn = "", terminationArea = "", terminationEntry = "", footNote = "";
         var pending = isParticipant ? pendingTermination() : null;
-        var editBtn = isOwner && task.status === "open"
+        var editBtn = isOwner && task.status === "open" && !isRejected
             ? '<a class="secondary-action detail-edit-action" href="' + api.escapeHtml(api.pageUrlWithReturn("task-publish.jsp?taskId=" + taskId)) + '">修改任务</a>' : "";
+
+        var rejectBanner = isRejected
+            ? '<section class="termination-request-banner termination-request-banner--review">' +
+              '<div class="termination-request-banner__head">' +
+              '<span>!</span>' +
+              '<div><strong>任务未通过审核</strong><small>请修改后重新提交</small></div>' +
+              '</div>' +
+              '<p class="termination-request-reason"><span>驳回理由</span>' + api.escapeHtml(task.auditRemark || "未填写") + '</p>' +
+              '<div class="termination-request-actions">' +
+              '<a class="primary-action" href="' + api.escapeHtml(api.pageUrlWithReturn("task-publish.jsp?taskId=" + taskId)) + '">修改后重新提交 →</a>' +
+              '</div>' +
+              '</section>' : "";
 
         if (isOwner && (task.status === "open" || task.status === "completed")) {
             deleteBtn = '<button class="secondary-action danger-action" type="button" data-action="delete-task">🗑️ 删除任务</button>';
         }
 
-        if (pending) {
+        if (isRejected) {
+            actionBtn = "";
+            footNote = "";
+        } else if (pending) {
             var isReq = Number(pending.requesterId) === Number(currentUser.id);
             var name = Number(pending.requesterId) === Number(task.publisherId) ? "发布者" : "接取者";
             terminationArea =
@@ -234,6 +250,7 @@
             '<span class="detail-tag detail-tag--category">跑腿</span>' +
             '<span class="' + cls + '">● ' + statusText + '</span>' +
             '</div>' +
+            rejectBanner +
             '<h2>' + api.escapeHtml(task.title) + '</h2>' +
             '<p class="detail-subtitle">发布者：' + api.escapeHtml(task.publisherName || "校园同学") + ' · ' + api.shortTime(task.createdAt) + '</p>' +
             '<div class="detail-price"><small>￥</small><strong>' + api.money(task.amount) + '</strong><span>跑腿费 · 仅作信息记录</span></div>' +
@@ -346,7 +363,9 @@
         }
         try {
             var results = await Promise.all([
-                api.request("/public/tasks/" + taskId),
+                api.request("/public/tasks/" + taskId).catch(function() {
+                    return api.request("/me/tasks/" + taskId);
+                }),
                 api.currentUser().catch(function() { return null; })
             ]);
             task = results[0];

@@ -41,7 +41,7 @@ public class TaskController {
      */
     @GetMapping("/public/tasks/{id}")
     public Result detail(@PathVariable int id, HttpSession session) {
-        return Result.ok(taskService.getTask(id, currentUserIdOrNull(session)));
+        return Result.ok(taskService.getTask(id, currentUserOrNull(session)));
     }
 
     /**
@@ -148,8 +148,7 @@ public class TaskController {
         return user;
     }
 
-    private Integer currentUserIdOrNull(HttpSession session) {
-        User user = (User) session.getAttribute("user");
-        return user == null ? null : user.getId();
+    private User currentUserOrNull(HttpSession session) {
+        return (User) session.getAttribute("user");
     }
 }

@@ -72,6 +72,18 @@ public class TaskDAO {
     }
 
     /**
+     * 查原表完整记录（含审核字段与发布者昵称，不过滤审核/软删除之外的条件，仅排除已软删除）。
+     * 用于公开详情接口的权限判断：发布者/管理员可看待审核与已驳回任务。查不到返回 null。
+     */
+    public Task findFullById(int id) {
+        String sql = "SELECT t.*, u.username AS publisherName "
+                + "FROM task t LEFT JOIN user u ON u.id = t.publisher_id "
+                + "WHERE t.id = ? AND t.is_deleted = 0";
+        List<Task> list = jdbc.query(sql, new BeanPropertyRowMapper<>(Task.class), id);
+        return list.isEmpty() ? null : list.get(0);
+    }
+
+    /**
      * 发布任务：audit_status 固定 pending（待管理员审核）、status 固定 open。
      * 返回自增主键 id。
      */
@@ -188,11 +200,12 @@ public class TaskDAO {
         return count == null ? 0 : count;
     }
 
-    /** 个人空间：我接取的任务（附订单状态与各时间点）。终止后订单 cancelled，不再计入。 */
+    /** 个人空间：我接取的任务（附订单状态、各时间点与发布者昵称）。终止后订单 cancelled，不再计入。 */
     public List<Task> findAcceptedByUser(int accepterId, int offset, int size) {
         String sql = "SELECT t.*, o.id AS orderId, o.status AS orderStatus, o.created_at AS acceptTime, "
-                + "o.delivered_at AS deliveredAt, o.finished_at AS finishedAt "
+                + "o.delivered_at AS deliveredAt, o.finished_at AS finishedAt, pu.username AS publisherName "
                 + "FROM task_order o JOIN task t ON t.id = o.task_id "
+                + "LEFT JOIN user pu ON pu.id = t.publisher_id "
                 + "WHERE o.accepter_id = ? AND o.status <> 'cancelled' "
                 + "ORDER BY o.created_at DESC LIMIT ? OFFSET ?";
         return jdbc.query(sql, new BeanPropertyRowMapper<>(Task.class), accepterId, size, offset);

@@ -9,6 +9,7 @@ import com.campus.errand.exception.BizException;
 import com.campus.errand.pojo.Task;
 import com.campus.errand.pojo.TaskOrder;
 import com.campus.errand.pojo.TaskTerminationRequest;
+import com.campus.errand.pojo.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,19 +61,46 @@ public class TaskService {
     }
 
     /**
-     * 任务详情。发布者本人额外返回 auditStatus/auditRemark，其他请求者不返回审核字段。
+     * 任务详情（契约 §7.2；前端联动清单 §3.2.2 / §3.4）。
+     * 审核通过的任务所有人可见；待审核/已驳回的任务仅发布者本人或管理员可见（含审核字段）。
      * 附带待处理终止申请（若有），供详情页展示终止横幅。
      */
-    public Task getTask(int id, Integer currentUserId) {
-        Task task = taskDAO.findPublicDetail(id);
+    public Task getTask(int id, User user) {
+        Task task = taskDAO.findFullById(id);
         if (task == null) {
-            throw new BizException(404, "任务不存在");
+            throw new BizException(404, "任务不存在或已删除");
         }
-        if (currentUserId == null || !currentUserId.equals(task.getPublisherId())) {
-            task.setAuditStatus(null);
-            task.setAuditRemark(null);
+        Integer currentUserId = user == null ? null : user.getId();
+        boolean isAdmin = user != null && "admin".equals(user.getRole());
+        boolean isOwner = currentUserId != null && currentUserId.equals(task.getPublisherId());
+
+        if ("approved".equals(task.getAuditStatus())) {
+            // 审核通过：所有人可见，但审核字段仅返回给发布者/管理员
+            if (!isOwner && !isAdmin) {
+                task.setAuditStatus(null);
+                task.setAuditRemark(null);
+            }
+        } else if (!isOwner && !isAdmin) {
+            // 待审核/已驳回：仅发布者或管理员可见
+            throw new BizException(404, "任务不存在或已删除");
         }
         task.setTerminationRequest(taskTerminationRequestDAO.findPendingByTaskId(id));
+        return task;
+    }
+
+    /**
+     * 读取本人发布的单个任务（含审核字段），用于被驳回后查看详情与跳转修改
+     * （前端联动清单 §3.2.1）。仅发布者本人可访问，非发布者返回 403。
+     */
+    public Task myTask(int userId, int taskId) {
+        Task task = taskDAO.findFullById(taskId);
+        if (task == null) {
+            throw new BizException(404, "任务不存在或已删除");
+        }
+        if (task.getPublisherId() == null || task.getPublisherId() != userId) {
+            throw new BizException(403, "无权限查看该任务");
+        }
+        task.setTerminationRequest(taskTerminationRequestDAO.findPendingByTaskId(taskId));
         return task;
     }
 

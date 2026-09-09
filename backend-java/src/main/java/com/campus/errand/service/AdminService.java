@@ -67,6 +67,14 @@ public class AdminService {
     }
 
     public void deleteTask(int id, int adminId) {
+        Task task = taskDAO.findById(id);
+        if (task == null || (task.getIsDeleted() != null && task.getIsDeleted() == 1)) {
+            throw new BizException(404, "任务不存在或已删除");
+        }
+        // 前端联动清单 §3.3：管理员只能删除状态为「已完成」的任务
+        if (!"completed".equals(task.getStatus())) {
+            throw new BizException(400, "只能删除状态为「已完成」的任务");
+        }
         if (taskDAO.softDeleteByAdmin(id, adminId) == 0) {
             throw new BizException(404, "任务不存在或已删除");
         }
