@@ -20,7 +20,8 @@
     }
 
     async function request(path, options) {
-        const config = Object.assign({method: "GET"}, options || {});
+        // 个人资料和“我的记录”依赖当前 Session，不能复用其他登录上下文的 GET 缓存。
+        const config = Object.assign({method: "GET", cache: "no-store"}, options || {});
         config.credentials = "include";
         config.headers = Object.assign({Accept: "application/json"}, config.headers || {});
         if (config.body && typeof config.body !== "string") {
@@ -205,6 +206,20 @@
         element.className = `form-feedback${message ? ` form-feedback--${type || "error"}` : ""}`;
     }
 
+    function syncAvatarElement(node, user) {
+        if (user && user.avatarUrl) {
+            node.style.backgroundImage = `url("${user.avatarUrl}")`;
+            node.style.backgroundSize = "cover";
+            node.style.backgroundPosition = "center";
+            node.textContent = "";
+        } else {
+            node.style.backgroundImage = "";
+            node.style.backgroundSize = "";
+            node.style.backgroundPosition = "";
+            node.textContent = initial(user && user.username);
+        }
+    }
+
     async function hydrateShell() {
         const sidebar = document.querySelector(".sidebar");
         if (!sidebar) return;
@@ -219,7 +234,7 @@
             node.textContent = user ? user.username : "游客同学";
         });
         document.querySelectorAll("[data-user-avatar]").forEach((node) => {
-            node.textContent = initial(user && user.username);
+            syncAvatarElement(node, user);
         });
 
         document.querySelectorAll("[data-admin-link]").forEach((node) => {

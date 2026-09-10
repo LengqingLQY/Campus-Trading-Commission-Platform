@@ -15,12 +15,13 @@
 
     function promoVisual(item, emoji, kind, badge) {
         const imageUrl = api.firstImageUrl(item.imageUrls);
+        const kindClass = kind === "跑腿推广" ? "discovery-card__kind--task" : "discovery-card__kind--product";
         const content = imageUrl
             ? `<img class="discovery-card__image" src="${api.escapeHtml(imageUrl)}" alt="${api.escapeHtml(item.title)}" loading="lazy" decoding="async">`
             : `<span class="discovery-card__emoji" aria-hidden="true">${emoji}</span>`;
         return `
             <div class="discovery-card__visual${imageUrl ? " discovery-card__visual--has-image" : ""}">
-                <span class="discovery-card__kind">${api.escapeHtml(kind)}</span>
+                <span class="discovery-card__kind ${kindClass}">${api.escapeHtml(kind)}</span>
                 ${content}
                 <span class="discovery-card__badge">${api.escapeHtml(badge)}</span>
             </div>`;
@@ -77,6 +78,11 @@
 
     // ===== 交易待办项 =====
     function todoItem(item, role, needsAction, statusText) {
+        const labels = {
+            "待交付": "待我确认交付", "待确认收货": "待我确认收货",
+            "待卖家交付": "等待卖家确认交付", "待买家确认": "等待买家确认收货",
+            "待处理终止申请": "待我处理终止申请", "待对方确认终止": "等待对方确认终止"
+        };
         const counterpart = role === "buyer"
             ? `卖家：${item.sellerName || "待联系"}`
             : `买家：${item.buyerName || "待联系"}`;
@@ -85,10 +91,11 @@
                href="${api.pageUrl(`product-order.jsp?orderId=${item.orderId}&role=${role}`)}">
                 <span class="todo-item__icon" aria-hidden="true">${role === "buyer" ? "🛍" : "📮"}</span>
                 <span class="todo-item__content">
+                    <span class="todo-item__role">二手交易 · 我是${role === "buyer" ? "买家" : "卖家"}</span>
                     <strong>${api.escapeHtml(item.title)}</strong>
                     <small>${api.escapeHtml(counterpart)} · ￥${api.money(item.dealPrice || item.price)}</small>
                 </span>
-                <span class="todo-item__status">${statusText}</span>
+                <span class="todo-item__status">${api.escapeHtml(labels[statusText] || statusText)}</span>
             </a>`;
     }
 
@@ -103,10 +110,11 @@
                href="${api.pageUrlWithReturn(`task-detail.jsp?taskId=${task.id}`)}">
                 <span class="todo-item__icon" aria-hidden="true">${icon}</span>
                 <span class="todo-item__content">
+                    <span class="todo-item__role">跑腿任务 · 我是${role === "publisher" ? "发布者" : "接取者"}</span>
                     <strong>${api.escapeHtml(task.title)}</strong>
                     <small>${api.escapeHtml(counterpart)} · ￥${api.money(task.amount)}</small>
                 </span>
-                <span class="todo-item__status">${statusText}</span>
+                <span class="todo-item__status">${api.escapeHtml(statusText)}</span>
             </a>`;
     }
 
@@ -116,17 +124,25 @@
         // 我发布的任务：accepted → 等待送达，delivered → 待确认
         (publishedTasks || []).forEach(task => {
             if (task.status === "accepted") {
-                todos.push({ kind: "task", role: "publisher", task: task, statusText: "等待送达", needsAction: false });
+                todos.push({ kind: "task", role: "publisher", task: task, statusText: "等待接取者送达", needsAction: false });
             } else if (task.status === "delivered") {
-                todos.push({ kind: "task", role: "publisher", task: task, statusText: "待确认", needsAction: true });
+                todos.push({ kind: "task", role: "publisher", task: task, statusText: "已送达，待我确认完成", needsAction: true });
             }
         });
         // 我接取的任务：accepted → 待送达，delivered → 已送达（等待发布者确认）
         (acceptedTasks || []).forEach(task => {
             if (task.status === "accepted") {
-                todos.push({ kind: "task", role: "accepter", task: task, statusText: "待送达", needsAction: true });
+                todos.push({ kind: "task", role: "accepter", task: task, statusText: "待我送达并确认", needsAction: true });
             } else if (task.status === "delivered") {
-                todos.push({ kind: "task", role: "accepter", task: task, statusText: "已送达", needsAction: false });
+                todos.push({ kind: "task", role: "accepter", task: task, statusText: "已送达，等待发布者确认", needsAction: false });
+            }
+        });
+        todos.forEach(entry => {
+            const request = entry.task.terminationRequest;
+            if (domain.isPendingTermination(request)) {
+                const ownId = entry.role === "publisher" ? entry.task.publisherId : entry.task.accepterId;
+                entry.needsAction = Number(request.requesterId) !== Number(ownId);
+                entry.statusText = entry.needsAction ? "待我处理终止申请" : "等待对方确认终止";
             }
         });
         return todos;
@@ -143,7 +159,7 @@
         // 2. 构建跑腿待办
         const taskTodos = buildTaskTodos(taskPublished, taskAccepted);
 
-        // 3. 合并（跑腿待办放在交易待办后面）
+        // 3. 合并后按当前用户是否需要处理统一分组。
         const allTodos = [...tradeTodos, ...taskTodos];
 
         if (badge) badge.textContent = String(allTodos.length);
@@ -158,17 +174,19 @@
             return;
         }
 
-        // 4. 分别渲染
-        let html = "";
-        // 交易待办
-        tradeTodos.forEach(({item, role, needsAction, statusText}) => {
-            html += todoItem(item, role, needsAction, statusText);
-        });
-        // 跑腿待办
-        taskTodos.forEach(({task, role, needsAction, statusText}) => {
-            html += taskTodoItem(task, role, needsAction, statusText);
-        });
-        root.innerHTML = html;
+        root.innerHTML = [
+            {needsAction: true, title: "需要我处理"},
+            {needsAction: false, title: "等待对方处理"}
+        ].map(group => {
+            const entries = allTodos.filter(entry => entry.needsAction === group.needsAction);
+            if (!entries.length) return "";
+            return `<section class="todo-group${group.needsAction ? " todo-group--action" : ""}" aria-label="${group.title}">
+                <h3 class="todo-group__heading">${group.title}<span>${entries.length}</span></h3>
+                ${entries.map(entry => entry.kind === "task"
+                    ? taskTodoItem(entry.task, entry.role, entry.needsAction, entry.statusText)
+                    : todoItem(entry.item, entry.role, entry.needsAction, entry.statusText)).join("")}
+            </section>`;
+        }).join("");
     }
 
     async function loadHome() {

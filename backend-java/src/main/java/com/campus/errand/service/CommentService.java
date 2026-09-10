@@ -95,7 +95,7 @@ public class CommentService {
         }
     }
 
-    /** 资源必须公开可见（审核通过且未删除）；已售出/已完成仍可见，视图不过滤 status。 */
+    /** 资源必须公开可见（商品在售，任务未完成）。 */
     private void requireVisibleResource(String resourceType, int resourceId) {
         boolean visible = "product".equals(resourceType)
                 ? productDAO.findPublicDetail(resourceId) != null

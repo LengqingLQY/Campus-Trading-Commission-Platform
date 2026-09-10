@@ -10,6 +10,7 @@ import com.campus.errand.pojo.Product;
 import com.campus.errand.pojo.Task;
 import com.campus.errand.pojo.User;
 import com.campus.errand.util.PasswordUtil;
+import com.campus.errand.util.PhoneValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -121,6 +122,7 @@ public class AdminService {
         if (username == null || username.trim().isEmpty()) {
             throw new BizException(400, "昵称不能为空");
         }
+        PhoneValidator.validate(phone == null ? null : phone.trim());
         userDAO.updateProfile(id,
                 username.trim(),
                 qq == null ? "" : qq.trim(),

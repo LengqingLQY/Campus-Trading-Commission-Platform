@@ -237,11 +237,11 @@ CREATE INDEX IF NOT EXISTS idx_porder_buyer    ON product_order(buyer_id);
 
 -- ============================ 视图 ============================
 -- 普通用户可见范围。后端查列表一律走视图，避免有人写查询时漏掉过滤条件
--- 导致未审核/已删除内容泄漏到前台（验收清单「边界检查」会查这一条）。
+-- 导致未审核、已删除或非公开状态内容泄漏到前台（验收清单「边界检查」会查这一条）。
 CREATE VIEW IF NOT EXISTS v_public_task AS
     SELECT * FROM task
-     WHERE audit_status = 'approved' AND is_deleted = 0;
+     WHERE audit_status = 'approved' AND is_deleted = 0 AND status <> 'completed';
 
 CREATE VIEW IF NOT EXISTS v_public_product AS
     SELECT * FROM product
-     WHERE audit_status = 'approved' AND is_deleted = 0;
+     WHERE audit_status = 'approved' AND is_deleted = 0 AND status = 'on_sale';

@@ -15,7 +15,11 @@ const navigationPages = [
 for (const page of navigationPages) {
     const header = read(page).match(/<header\b[^>]*>[\s\S]*?<\/header>/);
     assert.ok(header, `${page} 应保留页面标题`);
-    assert.doesNotMatch(header[0], /back-link|data-detail-back|返回/, `${page} 不应重复显示右上角返回入口`);
+    if (page === "task-detail.jsp") {
+        assert.equal((header[0].match(/data-detail-back-container/g) || []).length, 1, "任务详情应只保留一个顶部返回容器");
+    } else {
+        assert.doesNotMatch(header[0], /back-link|data-detail-back|返回/, `${page} 不应重复显示右上角返回入口`);
+    }
 }
 
 for (const [kind, listPage] of [["product", "secondhand.jsp"], ["task", "task-hall.jsp"]]) {
@@ -24,12 +28,18 @@ for (const [kind, listPage] of [["product", "secondhand.jsp"], ["task", "task-ha
     const script = read(`js/${kind}-detail.js`);
     assert.match(script, /class="secondary-action" data-detail-back/, "详情内容区应保留来源返回按钮");
     assert.ok(script.includes("returnContext.url"), "返回按钮仍应使用来源地址");
-    assert.match(script, /<div class="detail-actions">[\s\S]*?returnLink\(\)/, "详情页应在操作区渲染返回按钮");
+    if (kind === "task") {
+        assert.match(script, /container\.innerHTML = returnLink\(\)/, "任务返回入口应渲染到顶部容器");
+        assert.doesNotMatch(script, /<div class="detail-actions">[\s\S]*?returnLink\(\)/, "任务内容区不应重复返回入口");
+    } else {
+        assert.match(script, /<div class="detail-actions">[\s\S]*?returnLink\(\)/, "商品详情应在操作区渲染返回按钮");
+    }
     const publish = read(`${kind}-publish.jsp`);
     assert.ok(publish.includes(`class="secondary-action" href="${listPage}">取消</a>`), "发布页应保留表单取消入口");
 }
 
 assert.match(read("js/product-order.js"), /class="secondary-action"[^>]+>返回发现首页<\/a>/, "交易页应保留内容区返回入口");
+assert.doesNotMatch(read("task-hall.jsp"), /data-status="completed"/, "跑腿筛选不应保留已完成状态");
 const profileHtml = read("profile-user.jsp");
 assert.doesNotMatch(profileHtml, /data-profile-name|data-profile-avatar[\s>]/, "个人空间不应再显示右上角姓名按钮");
 assert.match(profileHtml, /data-profile-avatar-lg/, "个人资料中的头像应保留");
@@ -106,7 +116,7 @@ async function verifyProfileLoad(search = "") {
 }
 
 Promise.all([verifyProfileLoad(), verifyProfileLoad("?recordTab=bought")]).then(() => {
-    console.log("页面导航测试通过：5 个页面无重复顶部返回、内容区入口保留、个人空间正常加载");
+    console.log("页面导航测试通过：任务顶部返回、商品内容区返回、无重复入口、个人空间正常加载");
 }).catch((error) => {
     console.error(error);
     process.exitCode = 1;

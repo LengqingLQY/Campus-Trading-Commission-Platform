@@ -62,7 +62,8 @@ public class TaskService {
 
     /**
      * 任务详情（契约 §7.2；前端联动清单 §3.2.2 / §3.4）。
-     * 审核通过的任务所有人可见；待审核/已驳回的任务仅发布者本人或管理员可见（含审核字段）。
+     * 审核通过且未完成的任务所有人可见；已完成任务仅发布者、接取者或管理员可见；
+     * 待审核/已驳回的任务仅发布者本人或管理员可见（含审核字段）。
      * 附带待处理终止申请（若有），供详情页展示终止横幅。
      */
     public Task getTask(int id, User user) {
@@ -73,6 +74,15 @@ public class TaskService {
         Integer currentUserId = user == null ? null : user.getId();
         boolean isAdmin = user != null && "admin".equals(user.getRole());
         boolean isOwner = currentUserId != null && currentUserId.equals(task.getPublisherId());
+        boolean isAccepter = false;
+        if (currentUserId != null && !isOwner && "completed".equals(task.getStatus())) {
+            TaskOrder order = taskOrderDAO.findByTaskId(id);
+            isAccepter = order != null && currentUserId.equals(order.getAccepterId());
+        }
+
+        if ("completed".equals(task.getStatus()) && !isOwner && !isAccepter && !isAdmin) {
+            throw new BizException(404, "任务不存在或已删除");
+        }
 
         if ("approved".equals(task.getAuditStatus())) {
             // 审核通过：所有人可见，但审核字段仅返回给发布者/管理员
@@ -440,6 +450,9 @@ public class TaskService {
         }
         if (amount != null && amount < 0) {
             throw new BizException(400, "金额不能为负数");
+        }
+        if (amount != null && amount > 100000) {
+            throw new BizException(400, "跑腿金额不能超过 100,000 元");
         }
         String deadline = dto.getDeadline();
         if (deadline != null && !deadline.isEmpty() && !isValidTime(deadline)) {

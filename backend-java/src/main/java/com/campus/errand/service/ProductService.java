@@ -10,6 +10,7 @@ import com.campus.errand.pojo.Product;
 import com.campus.errand.pojo.ProductOrder;
 import com.campus.errand.pojo.ProductOrderDetail;
 import com.campus.errand.pojo.TerminationRequest;
+import com.campus.errand.pojo.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,12 +64,26 @@ public class ProductService {
     }
 
     /**
-     * 商品详情。卖家本人额外返回 auditStatus/auditRemark。
+     * 商品详情。公开只返回在售商品；已售出/已完成商品仅卖家、买家或管理员可见。
+     * 卖家本人额外返回 auditStatus/auditRemark。
      */
-    public Product getProduct(int id, Integer currentUserId) {
+    public Product getProduct(int id, User user) {
+        Integer currentUserId = user == null ? null : user.getId();
+        boolean isAdmin = user != null && "admin".equals(user.getRole());
         Product product = productDAO.findPublicDetail(id);
         if (product == null) {
-            throw new BizException(404, "商品不存在");
+            Product privateProduct = productDAO.findFullById(id);
+            if (privateProduct == null
+                    || !("sold".equals(privateProduct.getStatus()) || "completed".equals(privateProduct.getStatus()))) {
+                throw new BizException(404, "商品不存在");
+            }
+            ProductOrder order = productOrderDAO.findByProductId(id);
+            boolean isSeller = currentUserId != null && currentUserId.equals(privateProduct.getSellerId());
+            boolean isBuyer = order != null && currentUserId != null && currentUserId.equals(order.getBuyerId());
+            if (!isSeller && !isBuyer && !isAdmin) {
+                throw new BizException(404, "商品不存在");
+            }
+            product = privateProduct;
         }
         if (currentUserId == null || !currentUserId.equals(product.getSellerId())) {
             product.setAuditStatus(null);
@@ -176,11 +191,12 @@ public class ProductService {
     }
 
     /**
-     * 购买商品（三层防护，事务内）：校验可见且非自己发布 →
-     * UPDATE ... WHERE status='on_sale' → INSERT 购买记录（UNIQUE/CHECK 兜底）。
+     * 购买事务先执行条件更新，再读取成交资料并创建订单。
+     * SQLite 的并发买家先等待写锁，避免先读后写引起的锁升级冲突。
      */
     @Transactional
     public int buyProduct(int productId, int currentUserId) {
+        int rows = productDAO.markSold(productId, currentUserId);
         Product product = productDAO.findById(productId);
         if (product == null || (product.getIsDeleted() != null && product.getIsDeleted() == 1)
                 || !"approved".equals(product.getAuditStatus())) {
@@ -190,7 +206,6 @@ public class ProductService {
             throw new BizException(403, "不能购买自己的商品");
         }
 
-        int rows = productDAO.markSold(productId);
         if (rows == 0) {
             throw new BizException(409, "商品已售出");
         }

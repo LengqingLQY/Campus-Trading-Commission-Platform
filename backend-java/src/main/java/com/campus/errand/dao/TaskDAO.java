@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * 跑腿任务表数据访问。
  *
- * 公开查询一律走 v_public_task 视图（已过滤 audit_status='approved' AND is_deleted=0），
+ * 公开查询一律走 v_public_task 视图（已过滤审核、软删除和已完成状态），
  * 避免有人写查询时漏掉过滤条件导致未审核/已删除内容泄漏。
  */
 @Repository
@@ -33,7 +33,8 @@ public class TaskDAO {
         String sql = "SELECT t.id, t.title, t.description, t.pickup, t.delivery, t.deadline, t.amount, t.image_urls, "
                 + "t.status, t.publisher_id, t.created_at, u.username AS publisherName "
                 + "FROM v_public_task t JOIN user u ON u.id = t.publisher_id "
-                + "WHERE t.title LIKE ? ESCAPE '\\' OR t.description LIKE ? ESCAPE '\\' "
+                + "WHERE t.status <> 'completed' "
+                + "AND (t.title LIKE ? ESCAPE '\\' OR t.description LIKE ? ESCAPE '\\') "
                 + "ORDER BY " + orderBy + " LIMIT ? OFFSET ?";
         return jdbc.query(sql, new BeanPropertyRowMapper<>(Task.class), p, p, size, offset);
     }
@@ -44,7 +45,8 @@ public class TaskDAO {
     public long countPublic(String keyword) {
         String p = likePattern(keyword);
         String sql = "SELECT COUNT(*) FROM v_public_task t "
-                + "WHERE t.title LIKE ? ESCAPE '\\' OR t.description LIKE ? ESCAPE '\\'";
+                + "WHERE t.status <> 'completed' "
+                + "AND (t.title LIKE ? ESCAPE '\\' OR t.description LIKE ? ESCAPE '\\')";
         Long count = jdbc.queryForObject(sql, Long.class, p, p);
         return count == null ? 0 : count;
     }
@@ -57,7 +59,8 @@ public class TaskDAO {
         String sql = "SELECT t.id, t.title, t.description, t.pickup, t.delivery, t.deadline, t.amount, t.image_urls, "
                 + "t.contact, t.audit_status, t.audit_remark, t.status, t.publisher_id, t.created_at, t.updated_at, "
                 + "u.username AS publisherName "
-                + "FROM v_public_task t JOIN user u ON u.id = t.publisher_id WHERE t.id = ?";
+                + "FROM v_public_task t JOIN user u ON u.id = t.publisher_id "
+                + "WHERE t.id = ? AND t.status <> 'completed'";
         List<Task> list = jdbc.query(sql, new BeanPropertyRowMapper<>(Task.class), id);
         return list.isEmpty() ? null : list.get(0);
     }

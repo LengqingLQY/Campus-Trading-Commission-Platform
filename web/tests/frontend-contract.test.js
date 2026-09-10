@@ -62,7 +62,8 @@ for (const page of pages) {
     const ids = [...html.matchAll(/id="([^"]+)"/g)].map((match) => match[1]);
     assert.equal(new Set(ids).size, ids.length, `${page} 不应包含重复 id`);
     for (const match of html.matchAll(/(?:src|href)="((?:js|css)\/[^"]+)"/g)) {
-        assert.ok(fs.existsSync(path.join(webRoot, match[1])), `${page} 引用的资源 ${match[1]} 必须存在`);
+        const resourcePath = match[1].split(/[?#]/)[0];
+        assert.ok(fs.existsSync(path.join(webRoot, resourcePath)), `${page} 引用的资源 ${match[1]} 必须存在`);
     }
 }
 
