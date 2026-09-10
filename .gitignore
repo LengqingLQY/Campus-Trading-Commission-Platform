@@ -41,8 +41,14 @@ target/
 # 但 app.db 需入库，供团队成员 clone 后直接使用，避免各自重新初始化
 !backend/db/app.db
 
-# 图片/头像上传目录（运行时生成，不入库）
-uploads/
+# 图片/头像上传目录：保留与演示数据库匹配的基线素材；其余运行时上传文件不入库
+uploads/*
+!uploads/demo/
+uploads/demo/*
+!uploads/demo/**/*.jpg
+!uploads/demo/**/*.jpeg
+!uploads/demo/**/*.png
+!uploads/a70def87-4531-46fa-b14b-8ca3f84f843a.jpg
 
 # Python
 __pycache__/
